@@ -2,7 +2,7 @@ import tensorflow as tf
 from helpers.helpers import cosine_similarity
 import os
 
-NO_OF_TRIGRAMS = int(os.popen("wc -l \"$THESIS_PROCESSED_DATA_DIR/trigrams.txt\"").read().split()[0]) - 1
+NO_OF_TRIGRAMS = 70803
 
 tf.compat.v1.disable_eager_execution()
 

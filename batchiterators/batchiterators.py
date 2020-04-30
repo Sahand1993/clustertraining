@@ -12,22 +12,6 @@ DEFAULT_BATCH_SIZE = 5
 
 CSV_SEPARATOR = ";"
 
-
-def createFilteredVocab() -> Set:
-    FILTERED_WORD_INDICES = set()
-    for line in open(os.environ["THESIS_PROCESSED_DATA_DIR"] + "/vocabulary.txt").readlines():
-        wordId, word, count = line.split()
-        count = int(count)
-        wordId = int(wordId)
-        if count > MINFREQ_WORDS:
-            FILTERED_WORD_INDICES.add(wordId)
-
-    return FILTERED_WORD_INDICES
-
-
-FILTERED_WORD_INDICES = createFilteredVocab()
-
-
 def toints(strings) -> List[int]:
     return list(map(lambda s: int(s), strings))
 

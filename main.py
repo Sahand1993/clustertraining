@@ -8,8 +8,6 @@ import sys
 from helpers.helpers import correct_guesses_of_dssm
 import random
 
-saver = tf.compat.v1.train.Saver(max_to_keep=4)
-
 def rnd(lower, higher):
   exp = random.randint(-higher, -lower)
   base = 0.9 * random.random() + 0.1
@@ -63,6 +61,10 @@ for i in range(hyperItersDone + 1, SIZE):
   learningRate, batchSize = learningRates[i], batchSizes[i]
   print("lr = {}, bs = {}".format(learningRate, batchSize))
   # Create hyperparameter-pair folder
+  try:
+      os.mkdir("models")
+  except FileExistsError:
+      pass
   modelFolderPath = "models/{}".format("model_bs" + str(batchSize) + "_lr" + str(learningRate))
   
   try:
@@ -144,7 +146,7 @@ for i in range(hyperItersDone + 1, SIZE):
       ll_val_overall = 0
       correct_val = 0
       for batch in validationSet:
-          feed_dict = get_feed_dict(batch, DENSE)
+          feed_dict = get_feed_dict(batch)
           (ll_val,) = sess.run([logloss], feed_dict=feed_dict)
           batch_correct = correct_guesses_of_dssm(sess, feed_dict, prob_p, prob_n1, prob_n2, prob_n3, prob_n4)
           correct_val += batch_correct
@@ -157,9 +159,6 @@ for i in range(hyperItersDone + 1, SIZE):
       train_losses.append(ll_train_overall / trainingSet.getNoOfDataPoints())
       train_epoch_accuracies.append(correct_train / trainingSet.getNoOfDataPoints())
 
-      saver.save(sess, modelFolderPath + "/tf/dssm", global_step=epoch)
-      print("saved model")
-
       pickle.dump(train_losses, open(modelFolderPath + "/pickles/train_losses.pic", "wb"))
       pickle.dump(val_epoch_accuracies, open(modelFolderPath + "/pickles/val_epoch_accs.pic", "wb"))
       pickle.dump(val_losses, open(modelFolderPath + "/pickles/val_losses.pic", "wb"))
@@ -171,22 +170,11 @@ for i in range(hyperItersDone + 1, SIZE):
       print("overall val loss " + str(ll_val_overall / validationSet.getNoOfDataPoints()))
 
     pickle.dump(i, open("hyperparams/itersDone.pic", "wb"))
-
-    plt.figure()
-    plt.plot(train_epoch_accuracies)
-    plt.plot(val_epoch_accuracies)
-    plt.xlabel("epoch")
-    plt.ylabel("accuracy")
-    plt.title("accuracies")
-    plt.figure()
-    plt.plot(train_losses)
-    plt.plot(val_losses)
-    plt.xlabel("epoch")
-    plt.title("loss")
-    plt.show()
+    print("END OF i={}".format(i))
     print("train accs: {}".format(train_epoch_accuracies))
     print("val accs: {}".format(val_epoch_accuracies))
     print("train losses: {}".format(train_losses))
     print("val losses: {}".format(val_losses))
+    print("\n\n")
 
 # Save settings statistics in model folder for future comparison
