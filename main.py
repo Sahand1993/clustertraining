@@ -3,29 +3,13 @@ from dssm.model_dense import *
 import numpy as np
 from tqdm import tqdm
 import pickle
-from helpers.helpers import correct_guesses_of_dssm
+from helpers.helpers import correct_guesses_of_dssm, get_feed_dict
 import random
 
 def rnd(lower, higher):
   exp = random.randint(-higher, -lower)
   base = 0.9 * random.random() + 0.1
   return base * 10 ** exp
-
-def get_feed_dict(batch):
-  q_batch = batch.get_q_dense()
-  p_batch = batch.get_relevant_dense()
-  n1_batch, n2_batch, n3_batch, n4_batch = batch.get_irrelevant_dense()
-
-  feed_dict = {
-    x_q: q_batch,
-    x_p: p_batch,
-    x_n1: n1_batch,
-    x_n2: n2_batch,
-    x_n3: n3_batch,
-    x_n4: n4_batch
-  }
-
-  return feed_dict
 
 EPOCHS = 30
 
