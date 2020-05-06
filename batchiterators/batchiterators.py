@@ -1,5 +1,5 @@
 import numpy as np
-import os
+from itertools import chain
 from scipy.sparse import csr_matrix
 
 from typing import List, Iterable, Set
@@ -155,7 +155,12 @@ class RandomBatchIterator():
 
         :param args: iterators to uniformly sample from.
         """
-        self.iterators = list(args)
+        self.iterators = list(args) # TODO: Create traversal order.
+        self._turns = []
+        for iterator in self.iterators:
+            self._turns += list((iterator for _ in range(len(iterator))))
+
+        random.shuffle(self._turns)
 
 
     def __iter__(self):
@@ -164,12 +169,11 @@ class RandomBatchIterator():
 
     def __next__(self):
         if self.iterators:
-            iterator = random.choice(self.iterators)
             try:
+                iterator = self._turns.pop()
                 return iterator.__next__()
-            except StopIteration:
-                self.iterators.remove(iterator)
-                return self.__next__()
+            except IndexError:
+                raise StopIteration
         else:
             raise StopIteration
 
