@@ -8,7 +8,7 @@ from batchiterators.batchiterators import DataPoint, DataPointFactory, readCsvLi
 
 class FileIterator(ABC):
 
-    def __init__(self, batch_size = 5, no_of_irrelevant_samples = 4, encodingType ="NGRAM", path=None, dense=False):
+    def __init__(self, batch_size = 5, no_of_irrelevant_samples = 4, encodingType ="NGRAM", path=None, dense=True):
         if path:
             self._file = open(path)
             self._file.readline()
@@ -69,7 +69,7 @@ class FileIterator(ABC):
 
 class QuoraFileIterator(FileIterator):
 
-    def __init__(self, csvPath:str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=False):
+    def __init__(self, csvPath:str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True):
         super().__init__(batch_size,
                          no_of_irrelevant_samples,
                          encodingType,
@@ -82,7 +82,7 @@ class QuoraFileIterator(FileIterator):
         self.index_file()
         self._questionIds = list(self._questionIdToDuplicates.keys())
         self._total_samples = len(self._duplicate_pair_ids)
-        self._traversal_order = [i for i in self._duplicate_pair_ids] # TODO Implement with ability to provide training or val set but still index all, like in reuters
+        self._traversal_order = self._get_traversal_order(csvPath) #[_id for _id in self._duplicate_pair_ids] # TODO Implement with ability to provide training or val set but still index all, like in reuters
         random.shuffle(self._traversal_order)
 
 
@@ -117,7 +117,8 @@ class QuoraFileIterator(FileIterator):
 
 
     def index_file(self):
-        for line in self._file.readlines():
+        file = open("datasets/total.csv")
+        for line in file.readlines():
             csvValues = line.split(CSV_SEPARATOR)
             pair_id: int = int(csvValues[0])
             q1_id: int = int(csvValues[1])
@@ -153,9 +154,19 @@ class QuoraFileIterator(FileIterator):
             self._questionIdToIndices[q1_id] = q1_tokens
             self._questionIdToIndices[q2_id] = q2_tokens
 
+    def _get_traversal_order(self, csvPath):
+        file = open(csvPath)
+        return self._getPairIdsFrom(file)
+
+    def _getPairIdsFrom(self, file) -> List[int]:
+        return list(map(lambda csvLine: self._getPairIdFrom(csvLine), file))
+
+    def _getPairIdFrom(self, csvLine: str) -> int:
+        return int(csvLine.split(";")[0])
+
 
 class NaturalQuestionsFileIterator(FileIterator):
-    def __init__(self, path: str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=False):
+    def __init__(self, path: str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True):
         """
 
         :param path:
@@ -218,7 +229,7 @@ class NaturalQuestionsFileIterator(FileIterator):
 
 
 class ReutersFileIterator(FileIterator):
-    def __init__(self, dataSetPathJson: str, set = "train", batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=False):
+    def __init__(self, dataSetPathJson: str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True):
         """
 
         :param set: either "train" or "val"
@@ -228,13 +239,12 @@ class ReutersFileIterator(FileIterator):
         :param encodingType:
         """
         super().__init__(batch_size, no_of_irrelevant_samples, encodingType, dense=dense)
-        self._idToArticle: Dict[int, Dict] = dict()
+        self._idToArticle: Dict[int, dict] = dict()
         self._tagToId: Dict[str, Set] = dict()
         self.NON_TAG_KEYS = ["queryArticleNGramIndices", "queryArticleWordIndices", "relevantId", "articleId", "id"]
         self._index()
-        self._traversal_order: List[int] = self._getArticleIdsFromFile(dataSetPathJson) # TODO: Select as many as in natural questions
+        self._traversal_order: List[int] = self._getArticleIdsFromFile(dataSetPathJson)
         random.shuffle(self._traversal_order)
-        self.ARTICLENGRAMS_CSVIDX = None # TODO
         self.TAG_KEYS = [
                 "c11",
                 "c12",
@@ -306,9 +316,6 @@ class ReutersFileIterator(FileIterator):
             relevantArticle = self._idToArticle[queryArticle["relevantId"]]
             irrelevants: List[str] = self.get_irrelevants(_id)
             if self._encodingType == "NGRAM":
-                print(queryArticle["queryArticleNGramIndices"])
-                print(relevantArticle["queryArticleNGramIndices"])
-                print(irrelevants)
                 samples.append(DataPointFactory.fromNGramsData(_id,
                                                                queryArticle["queryArticleNGramIndices"],
                                                                relevantArticle["queryArticleNGramIndices"],
