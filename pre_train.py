@@ -31,7 +31,7 @@ os.mkdir("pretrain")
 modelPath = "pretrain/model_bs" + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
 os.mkdir(modelPath)
 
-saver = tf.compat.v1.train.Saver(max_to_keep=25)
+saver = tf.compat.v1.train.Saver(max_to_keep=100)
 
 with tf.compat.v1.Session() as sess:
     optimizer = tf.compat.v1.train.AdamOptimizer(LEARNING_RATE).minimize(logloss)
