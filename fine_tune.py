@@ -27,8 +27,8 @@ EPOCHS = 30
 BATCH_SIZE = 16
 LEARNING_RATE = 0.00011702251629896198
 
-os.mkdir("pretrain")
-modelPath = "pretrain/model_bs" + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
+os.mkdir("pretrain2")
+modelPath = "pretrain2/model_bs" + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
 os.mkdir(modelPath)
 
 saver = tf.compat.v1.train.Saver(max_to_keep=100)
