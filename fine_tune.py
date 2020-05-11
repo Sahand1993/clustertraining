@@ -50,14 +50,14 @@ with tf.compat.v1.Session() as sess:
 
 
     trainingSet = NaturalQuestionsFileIterator(
-        "datasets/quora/train.csv",
+        "datasets/nq/train.csv",
         batch_size=BATCH_SIZE,
         no_of_irrelevant_samples=4,
         encodingType="NGRAM",
         dense=DENSE)
 
     validationSet = NaturalQuestionsFileIterator(
-        "datasets/quora/val.csv",
+        "datasets/nq/val.csv",
         batch_size=BATCH_SIZE,
         no_of_irrelevant_samples=4,
         encodingType="NGRAM",
