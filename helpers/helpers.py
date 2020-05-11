@@ -20,19 +20,3 @@ def correct_guesses_of_dssm(sess, feed_dict, prob_p, prob_n1, prob_n2, prob_n3, 
     m = np.vstack((p, n1, n2, n3, n4))
     guess = np.argmax(m, 0)
     return len(np.where(guess == 0)[0])
-
-def get_feed_dict(batch):
-    q_batch = batch.get_q_dense()
-    p_batch = batch.get_relevant_dense()
-    n1_batch, n2_batch, n3_batch, n4_batch = batch.get_irrelevant_dense()
-
-    feed_dict = {
-    x_q: q_batch,
-    x_p: p_batch,
-    x_n1: n1_batch,
-    x_n2: n2_batch,
-    x_n3: n3_batch,
-    x_n4: n4_batch
-    }
-
-    return feed_dict

@@ -2,13 +2,31 @@ from batchiterators.batchiterators import RandomBatchIterator
 from batchiterators.fileiterators import *
 from dssm.model_dense import *
 import os
+from helpers.helpers import correct_guesses_of_dssm
 from tqdm import tqdm
 import pickle
-from helpers.helpers import correct_guesses_of_dssm, get_feed_dict
+
+def get_feed_dict(batch):
+    q_batch = batch.get_q_dense()
+    p_batch = batch.get_relevant_dense()
+    n1_batch, n2_batch, n3_batch, n4_batch = batch.get_irrelevant_dense()
+
+    feed_dict = {
+    x_q: q_batch,
+    x_p: p_batch,
+    x_n1: n1_batch,
+    x_n2: n2_batch,
+    x_n3: n3_batch,
+    x_n4: n4_batch
+    }
+
+    return feed_dict
+
 
 EPOCHS = 30
 BATCH_SIZE = 16
 LEARNING_RATE = 0.00011702251629896198
+
 os.mkdir("pretrain")
 modelPath = "pretrain/model_bs" + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
 os.mkdir(modelPath)
@@ -23,22 +41,22 @@ with tf.compat.v1.Session() as sess:
         saver.restore(sess, path)
         print("restored model")
     except Exception as err:
+        print("Couldn't restore model")
         init = tf.compat.v1.global_variables_initializer()
         sess.run(init)
-        print("Couldn't restore model")
-
-    print("Initializing new modelsRun2")
+        print("Initializing new model")
 
     DENSE = True
 
-    rcv1TrainingSet = ReutersFileIterator(
-        "datasets/rcv1/train.json",
+
+    quoraTrainingSet = QuoraFileIterator(
+        "datasets/quora/train.csv",
         batch_size=BATCH_SIZE,
         no_of_irrelevant_samples=4,
         encodingType="NGRAM",
         dense=DENSE)
-    quoraTrainingSet = QuoraFileIterator(
-        "datasets/quora/train.csv",
+    rcv1TrainingSet = ReutersFileIterator(
+        "datasets/rcv1/train.json",
         batch_size=BATCH_SIZE,
         no_of_irrelevant_samples=4,
         encodingType="NGRAM",
@@ -47,13 +65,13 @@ with tf.compat.v1.Session() as sess:
     trainingSet = RandomBatchIterator(rcv1TrainingSet, quoraTrainingSet)
 
     rcv1ValidationSet = ReutersFileIterator(
-        "datasets/rcv1/validation.json",
+        "datasets/rcv1/val.json",
         batch_size=BATCH_SIZE,
         no_of_irrelevant_samples=4,
         encodingType="NGRAM",
         dense=DENSE)
     quoraValidationSet = QuoraFileIterator(
-        "datasets/quora/validation.csv",
+        "datasets/quora/val.csv",
         batch_size=BATCH_SIZE,
         no_of_irrelevant_samples=4,
         encodingType="NGRAM",
@@ -86,7 +104,7 @@ with tf.compat.v1.Session() as sess:
 
     for epoch in range(iterations_done + 1, EPOCHS + 1):
         print("Epoch {}".format(epoch))
-        if epoch > 0:
+        if epoch > 1: # Should be larger than 1, since we're starting on epoch 1.
             trainingSet.restart()
             validationSet.restart()
 
