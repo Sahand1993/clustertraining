@@ -88,7 +88,7 @@ class QuoraFileIterator(FileIterator):
 
     def restart(self):
         self.current_idx = 0
-        self._traversal_order = random.shuffle([i for i in range(len(self._duplicate_pair_ids))])
+        random.shuffle(self._traversal_order)
 
 
     def get_samples(self, pairIds: List[int]) -> List[DataPoint]:
@@ -117,7 +117,8 @@ class QuoraFileIterator(FileIterator):
 
 
     def index_file(self):
-        file = open("datasets/total.csv")
+        file = open("datasets/quora/total.csv")
+        file.readline()
         for line in file.readlines():
             csvValues = line.split(CSV_SEPARATOR)
             pair_id: int = int(csvValues[0])
@@ -159,6 +160,7 @@ class QuoraFileIterator(FileIterator):
         return self._getPairIdsFrom(file)
 
     def _getPairIdsFrom(self, file) -> List[int]:
+        file.readline()
         return list(map(lambda csvLine: self._getPairIdFrom(csvLine), file))
 
     def _getPairIdFrom(self, csvLine: str) -> int:
@@ -343,13 +345,11 @@ class ReutersFileIterator(FileIterator):
             if irrelevantId == _id:
                 continue
             if not self.isRelevant(irrelevantId, _id):
-                print("was irrelevant")
                 if self._encodingType == "NGRAM":
                     irrelevants.append(self._idToArticle[irrelevantId]["queryArticleNGramIndices"])
                 else:
                     irrelevants.append(self._idToArticle[irrelevantId]["queryArticleWordIndices"])
             if len(irrelevants) == self._no_of_irrelevant_samples:
-                print("returning irrelevants")
                 return irrelevants
 
 
@@ -358,14 +358,10 @@ class ReutersFileIterator(FileIterator):
         article2: Dict = self._idToArticle[id2]
         article1BoolTagVector: List[bool] = self.getBooleanTagVector(article1)
         article2BoolTagVector: List[bool] = self.getBooleanTagVector(article2)
-        print(id1, article1BoolTagVector)
-        print(id2, article2BoolTagVector)
         andVector: List[bool] = list(map(lambda tags: tags[0] and tags[1], zip(article1BoolTagVector, article2BoolTagVector)))
         for andResult in andVector:
             if andResult:
-                print("return True")
                 return True
-        print("return false")
         return False
 
 
