@@ -27,8 +27,8 @@ EPOCHS = 30
 BATCH_SIZE = 16
 LEARNING_RATE = 0.00011702251629896198
 
-os.mkdir("pretrain2")
-modelPath = "pretrain2/model_bs" + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
+os.mkdir("finetune2")
+modelPath = "finetune2/model_bs" + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
 os.mkdir(modelPath)
 os.mkdir(modelPath + "/pickles")
 os.mkdir(modelPath + "/tf")
