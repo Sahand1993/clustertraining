@@ -183,5 +183,9 @@ class RandomBatchIterator():
             iterator.restart()
 
 
+    def getNoOfDataPoints(self):
+        return sum(map(lambda it: it.getNoOfDataPoints(), self.iterators))
+
+
     def __len__(self):
         return sum(map(lambda iterator: len(iterator), self.iterators))

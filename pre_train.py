@@ -30,6 +30,8 @@ LEARNING_RATE = 0.00011702251629896198
 os.mkdir("pretrain")
 modelPath = "pretrain/model_bs" + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
 os.mkdir(modelPath)
+os.mkdir(modelPath + "/tf")
+os.mkdir(modelPath + "/pickles")
 
 saver = tf.compat.v1.train.Saver(max_to_keep=100)
 
