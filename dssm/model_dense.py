@@ -2,7 +2,7 @@ import tensorflow as tf
 from helpers.helpers import cosine_similarity
 import os
 
-NO_OF_TRIGRAMS = 70803
+NO_OF_TRIGRAMS = 65547
 
 tf.compat.v1.disable_eager_execution()
 
