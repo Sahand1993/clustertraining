@@ -182,6 +182,12 @@ class RandomBatchIterator():
         for iterator in self.iterators:
             iterator.restart()
 
+        self._turns = []
+        for iterator in self.iterators:
+            self._turns += list((iterator for _ in range(len(iterator))))
+
+        random.shuffle(self._turns)
+
 
     def getNoOfDataPoints(self):
         return sum(map(lambda it: it.getNoOfDataPoints(), self.iterators))
