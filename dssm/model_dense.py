@@ -64,4 +64,3 @@ prob_n3 = tf.compat.v1.math.divide(tf.compat.v1.exp(r_n3), sum_r)
 prob_n4 = tf.compat.v1.math.divide(tf.compat.v1.exp(r_n4), sum_r)
 
 logloss = -tf.compat.v1.reduce_sum(tf.compat.v1.log(prob_p))
-optimizer = tf.compat.v1.train.AdamOptimizer(0.0001).minimize(logloss)
