@@ -33,10 +33,10 @@ os.mkdir(modelPath)
 os.mkdir(modelPath + "/tf")
 os.mkdir(modelPath + "/pickles")
 
+optimizer = tf.compat.v1.train.AdamOptimizer(LEARNING_RATE).minimize(logloss)
 saver = tf.compat.v1.train.Saver(max_to_keep=100)
 
 with tf.compat.v1.Session() as sess:
-    optimizer = tf.compat.v1.train.AdamOptimizer(LEARNING_RATE).minimize(logloss)
     try:
         # https://www.easy-tensorflow.com/tf-tutorials/basics/save-and-restore
         path = tf.compat.v1.train.latest_checkpoint(modelPath + "/tf")
