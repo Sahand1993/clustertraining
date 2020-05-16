@@ -20,3 +20,10 @@ def correct_guesses_of_dssm(sess, feed_dict, prob_p, prob_n1, prob_n2, prob_n3, 
     m = np.vstack((p, n1, n2, n3, n4))
     guess = np.argmax(m, 0)
     return len(np.where(guess == 0)[0])
+
+def correct_guesses_of_dssm_10(sess, feed_dict, prob_p, prob_n1, prob_n2, prob_n3, prob_n4, prob_n5, prob_n6, prob_n7, prob_n8, prob_n9, prob_n10):
+    p, n1, n2, n3, n4, n5, n6, n7, n8, n9, n10 = sess.run([prob_p, prob_n1, prob_n2, prob_n3, prob_n4, prob_n5, prob_n6, prob_n7, prob_n8, prob_n9, prob_n10], feed_dict=feed_dict)
+
+    m = np.vstack((p, n1, n2, n3, n4, n5, n6, n7, n8, n9, n10))
+    guess = np.argmax(m, 0)
+    return len(np.where(guess == 0)[0])
