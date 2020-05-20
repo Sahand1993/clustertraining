@@ -1,4 +1,3 @@
-from batchiterators.batchiterators import RandomBatchIterator
 from batchiterators.fileiterators import *
 from dssm.model_dense import *
 import os
@@ -27,11 +26,11 @@ EPOCHS = 30
 BATCH_SIZE = 16
 LEARNING_RATE = 0.00011702251629896198
 
-os.mkdir("pretrain")
-modelPath = "pretrain/model_bs" + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
+os.mkdir("finetune_new1")
+modelPath = "finetune_new1/model_bs" + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
 os.mkdir(modelPath)
-os.mkdir(modelPath + "/tf")
 os.mkdir(modelPath + "/pickles")
+os.mkdir(modelPath + "/tf")
 
 optimizer = tf.compat.v1.train.AdamOptimizer(LEARNING_RATE).minimize(logloss)
 saver = tf.compat.v1.train.Saver(max_to_keep=100)
@@ -51,36 +50,20 @@ with tf.compat.v1.Session() as sess:
     DENSE = True
 
 
-    # quoraTrainingSet = QuoraFileIterator(
-    #     "datasets/quora/train.csv",
-    #     batch_size=BATCH_SIZE,
-    #     no_of_irrelevant_samples=4,
-    #     encodingType="NGRAM",
-    #     dense=DENSE)
-    # rcv1TrainingSet = ReutersFileIterator(
-    #     "datasets/rcv1/train.json",
-    #     batch_size=BATCH_SIZE,
-    #     no_of_irrelevant_samples=4,
-    #     encodingType="NGRAM",
-    #     dense=DENSE)
-
-    #trainingSet = RandomBatchIterator(rcv1TrainingSet, quoraTrainingSet)
-
-    rcv1ValidationSet = ReutersFileIterator(
-        "datasets/rcv1/val.json",
+    trainingSet = NaturalQuestionsFileIterator(
+        "datasets_smallnq/nq/train.csv",
         batch_size=BATCH_SIZE,
         no_of_irrelevant_samples=4,
         encodingType="NGRAM",
         dense=DENSE)
-    quoraValidationSet = QuoraFileIterator(
-        "datasets/quora/val.csv",
+
+    validationSet = NaturalQuestionsFileIterator(
+        "datasets_smallnq/nq/val.csv",
         batch_size=BATCH_SIZE,
         no_of_irrelevant_samples=4,
         encodingType="NGRAM",
         dense=DENSE
     )
-
-    validationSet = RandomBatchIterator(rcv1ValidationSet, quoraValidationSet)
 
     try:
         iterations_done = pickle.load(open(modelPath + "/pickles/i.pic", "rb"))
@@ -112,12 +95,12 @@ with tf.compat.v1.Session() as sess:
 
         ll_train_overall = 0
         correct_train = 0
-        # for batch in tqdm(trainingSet):
-        #     feed_dict = get_feed_dict(batch)
-        #     _, ll = sess.run([optimizer, logloss], feed_dict=feed_dict)
-        #     ll_train_overall += ll
-        #     batch_correct = correct_guesses_of_dssm(sess, feed_dict, prob_p, prob_n1, prob_n2, prob_n3, prob_n4)
-        #     correct_train += batch_correct
+        for batch in tqdm(trainingSet):
+            feed_dict = get_feed_dict(batch)
+            _, ll = sess.run([optimizer, logloss], feed_dict=feed_dict)
+            ll_train_overall += ll
+            batch_correct = correct_guesses_of_dssm(sess, feed_dict, prob_p, prob_n1, prob_n2, prob_n3, prob_n4)
+            correct_train += batch_correct
 
         # evaluate on validation set
         ll_val_overall = 0
@@ -129,7 +112,7 @@ with tf.compat.v1.Session() as sess:
             correct_val += batch_correct
             ll_val_overall += ll_val
 
-        #print(correct_train / trainingSet.getNoOfDataPoints())
+        print(correct_train / trainingSet.getNoOfDataPoints())
         print(correct_val / validationSet.getNoOfDataPoints())
         val_losses.append(ll_val_overall / validationSet.getNoOfDataPoints())
         val_epoch_accuracies.append(correct_val / validationSet.getNoOfDataPoints())

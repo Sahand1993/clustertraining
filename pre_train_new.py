@@ -27,8 +27,8 @@ EPOCHS = 30
 BATCH_SIZE = 16
 LEARNING_RATE = 0.00011702251629896198
 
-os.mkdir("pretrain")
-modelPath = "pretrain/model_bs" + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
+os.mkdir("pretrain11")
+modelPath = "pretrain11/model_bs" + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
 os.mkdir(modelPath)
 os.mkdir(modelPath + "/tf")
 os.mkdir(modelPath + "/pickles")
@@ -51,29 +51,29 @@ with tf.compat.v1.Session() as sess:
     DENSE = True
 
 
-    # quoraTrainingSet = QuoraFileIterator(
-    #     "datasets/quora/train.csv",
-    #     batch_size=BATCH_SIZE,
-    #     no_of_irrelevant_samples=4,
-    #     encodingType="NGRAM",
-    #     dense=DENSE)
-    # rcv1TrainingSet = ReutersFileIterator(
-    #     "datasets/rcv1/train.json",
-    #     batch_size=BATCH_SIZE,
-    #     no_of_irrelevant_samples=4,
-    #     encodingType="NGRAM",
-    #     dense=DENSE)
+    quoraTrainingSet = QuoraFileIterator(
+         "new_datasets/quora/train.csv",
+         batch_size=BATCH_SIZE,
+         no_of_irrelevant_samples=4,
+         encodingType="NGRAM",
+         dense=DENSE)
+    rcv1TrainingSet = ReutersFileIterator(
+         "new_datasets/rcv1/train.json",
+         batch_size=BATCH_SIZE,
+         no_of_irrelevant_samples=4,
+         encodingType="NGRAM",
+         dense=DENSE)
 
-    #trainingSet = RandomBatchIterator(rcv1TrainingSet, quoraTrainingSet)
+    trainingSet = RandomBatchIterator(rcv1TrainingSet, quoraTrainingSet)
 
     rcv1ValidationSet = ReutersFileIterator(
-        "datasets/rcv1/val.json",
+        "new_datasets/rcv1/val.json",
         batch_size=BATCH_SIZE,
         no_of_irrelevant_samples=4,
         encodingType="NGRAM",
         dense=DENSE)
     quoraValidationSet = QuoraFileIterator(
-        "datasets/quora/val.csv",
+        "new_datasets/quora/val.csv",
         batch_size=BATCH_SIZE,
         no_of_irrelevant_samples=4,
         encodingType="NGRAM",

@@ -177,8 +177,8 @@ class NaturalQuestionsFileIterator(FileIterator):
         :param encodingType: Can be NGRAM or WORD. Determines which document representation will be used.
         """
         super().__init__(batch_size, no_of_irrelevant_samples, encodingType, path, dense)
-        self._questionDocumentPairs: List[List[str]] = readCsvLines(self._file)
-        self._traversal_order = list(range(len(self._questionDocumentPairs)))
+        self._csvValues: List[List[str]] = readCsvLines(self._file)
+        self._traversal_order = list(range(len(self._csvValues)))
         random.shuffle(self._traversal_order)
 
 
@@ -192,35 +192,39 @@ class NaturalQuestionsFileIterator(FileIterator):
 
 
     def getDataPoint(self, idx: int) -> DataPoint:
-        csvValues = self._questionDocumentPairs[idx]
-        _id = csvValues[0]
+        csvRow = self._csvValues[idx]
+        _id = csvRow[0]
         irrelevantDocuments: List[str] = self.get_irrelevants(idx)
+        question, document = self.get_query_doc_pair(csvRow)
         if self._encodingType == "NGRAM":
-            question, document = csvValues[1], csvValues[2]
             return DataPointFactory.fromNGramsData(_id, question, document, irrelevantDocuments)
         elif self._encodingType == "WORD":
-            question, document = csvValues[3], csvValues[4]
             return DataPointFactory.fromWordIndicesData(_id, question, document, irrelevantDocuments)
         else:
             raise ValueError("Incorrect value of self._encoding_type")
 
 
     def get_sample(self, idx: int) -> Tuple[str, str]:
-        csvValues = self._questionDocumentPairs[idx]
+        csvRow = self._csvValues[idx]
+        return self.get_query_doc_pair(csvRow)
+
+
+    def get_query_doc_pair(self, csvRow):
         if self._encodingType == "NGRAM":
-            return csvValues[1], csvValues[2]
+            return csvRow[2], csvRow[3]
         elif self._encodingType == "WORD":
-            return csvValues[3], csvValues[4]
+            return csvRow[4], csvRow[5]
         else:
             raise ValueError("Incorrect value of self._encoding_type")
 
-
     def get_irrelevants(self, idx: int) -> List[str]:
         irrelevantIndices: List[int] \
-            = list(map(lambda x: x - 1, sample_numbers(len(self._questionDocumentPairs), self._no_of_irrelevant_samples, idx)))
+            = list(map(lambda x: x - 1, sample_numbers(len(self._csvValues), self._no_of_irrelevant_samples, idx)))
         irrelevantDocuments: List[str] = []
         for idx in irrelevantIndices:
-            _, document = self.get_sample(idx)
+            query, document = self.get_sample(idx)
+            if (document == ''):
+                print("{} has empty document".format(query))
             irrelevantDocuments.append(document)
         return irrelevantDocuments
 

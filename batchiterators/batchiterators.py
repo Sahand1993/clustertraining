@@ -12,8 +12,15 @@ DEFAULT_BATCH_SIZE = 5
 
 CSV_SEPARATOR = ";"
 
-def toints(strings) -> List[int]:
-    return list(map(lambda s: int(s), strings))
+
+def to_dense(indices: List[str]) -> List[int]:
+    array = np.zeros((1, NO_OF_TRIGRAMS))
+    #print(indices)
+    for freq_index in indices:
+        # TODO: Vänta på preprocessor och se om du kan slippa använda parenteser över huvud taget.
+        freq, index = freq_index.split(" ")
+        array[0][int(index)] = int(freq)
+    return array
 
 
 def readCsvLines(file) -> List[List[str]]:
@@ -70,18 +77,18 @@ class DataPointFactory():
     def fromNGramsData(_id: int, query_ngrams: str, relevant_ngrams: str, irrelevant_ngrams: List[str]) -> DataPoint:
         return DataPoint(
             _id,
-            np.array(toints(query_ngrams.split(","))),
-            np.array(toints(relevant_ngrams.split(","))),
-            np.array([toints(ngrams.split(",")) for ngrams in irrelevant_ngrams])
+            np.array(to_dense(query_ngrams.split(","))),
+            np.array(to_dense(relevant_ngrams.split(","))),
+            np.array([to_dense(ngrams.split(",")) for ngrams in irrelevant_ngrams])
         )
 
     @staticmethod
     def fromWordIndicesData(_id: int, queryWordIndices: str, relevantWordIndices: str, irrelevantWordIndices: List[str]) -> DataPoint:
         return DataPoint(
             _id,
-            filterWords(np.array(toints(queryWordIndices.split(",")))),
-            filterWords(np.array(toints(relevantWordIndices.split(",")))),
-            np.array([filterWords(toints(ngrams.split(","))) for ngrams in irrelevantWordIndices])
+            filterWords(np.array(to_dense(queryWordIndices.split(",")))),
+            filterWords(np.array(to_dense(relevantWordIndices.split(",")))),
+            np.array([filterWords(to_dense(ngrams.split(","))) for ngrams in irrelevantWordIndices])
         )
 
 
@@ -93,22 +100,26 @@ class DataPointBatch():
 
 
     def get_q_indices(self) -> np.ndarray:
-        return self.create_batch(list(map(lambda data_point: data_point.get_query_ngrams(), self.data_points))) # TODO: Really necessary to turn into list? (For all create_batch* function calls.
+        return self.create_batch(list(map(lambda data_point: data_point.get_query_ngrams(), self.data_points)))
+
 
 
     def get_q_dense(self) -> np.ndarray:
-        return self.create_batch_dense(list(map(lambda data_point: data_point.get_query_ngrams(), self.data_points)))
-
+        #return self.create_batch_dense(list(map(lambda data_point: data_point.get_query_ngrams(), self.data_points)))
+        return np.vstack([q for q in map(lambda data_point: data_point.get_query_ngrams(), self.data_points)])
 
     def get_relevant_indices(self) -> np.ndarray:
         return self.create_batch(list(map(lambda data_point: data_point.get_relevant_ngrams(), self.data_points)))
 
 
+
+
     def get_relevant_dense(self) -> np.ndarray:
-        return self.create_batch_dense(list(map(lambda data_point: data_point.get_relevant_ngrams(), self.data_points)))
+        #return self.create_batch_dense(list(map(lambda data_point: data_point.get_relevant_ngrams(), self.data_points)))
+        return np.vstack([rel for rel in map(lambda data_point: data_point.get_relevant_ngrams(), self.data_points)])
 
 
-    def get_irrelevant_indices(self) -> List[np.ndarray]:
+    def get_irrelevant_indices(self) -> List[np.ndarray]: # TODO
         irrelevants_batches = [] # [irr1_batch, irr2_batch, irr3_batch]
         for i in range(self._no_of_irrelevant_samples):
             irrelevants_batches.append(self.create_batch(list(map(lambda data_point: data_point.get_irrelevant_ngrams()[i], self.data_points))))
@@ -116,10 +127,13 @@ class DataPointBatch():
         return irrelevants_batches
 
 
-    def get_irrelevant_dense(self) -> List[np.ndarray]:
+    def get_irrelevant_dense(self) -> List[np.ndarray]: # TODO
         irrelevants_batches = []
         for i in range(self._no_of_irrelevant_samples):
-            irrelevants_batches.append(self.create_batch_dense(list(map(lambda data_point: data_point.get_irrelevant_ngrams()[i], self.data_points))))
+            #batch = self.create_batch_dense(
+            #    list(map(lambda data_point: data_point.get_irrelevant_ngrams()[i], self.data_points)))
+            batch = np.vstack([irr for irr in map(lambda data_point: data_point.get_irrelevant_ngrams()[i], self.data_points)])
+            irrelevants_batches.append(batch)
 
         return irrelevants_batches
 
