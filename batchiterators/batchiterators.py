@@ -5,7 +5,8 @@ from scipy.sparse import csr_matrix
 from typing import List, Iterable, Set
 import random
 from dssm.config import *
-from dssm.model_dense import NO_OF_TRIGRAMS
+
+NO_OF_INDICES = NO_OF_WORDS
 
 DEFAULT_IRRELEVANT_SAMPLES = 4
 DEFAULT_BATCH_SIZE = 5
@@ -14,7 +15,7 @@ CSV_SEPARATOR = ";"
 
 
 def to_dense(indices: List[str]) -> List[int]:
-    array = np.zeros((1, NO_OF_TRIGRAMS))
+    array = np.zeros((1, NO_OF_INDICES))
     #print(indices)
     for freq_index in indices:
         # TODO: Vänta på preprocessor och se om du kan slippa använda parenteser över huvud taget.
@@ -42,8 +43,8 @@ def sample_numbers(end: int, size: int, exclude: int) -> List[int]:
     return numbers
 
 
-def filterWords(wordIndices: Iterable) -> np.ndarray:
-    return np.array(list(filter(lambda wordIndex: wordIndex in FILTERED_WORD_INDICES, wordIndices)))
+#def filterWords(wordIndices: Iterable) -> np.ndarray:
+#    return np.array(list(filter(lambda wordIndex: wordIndex in FILTERED_WORD_INDICES, wordIndices)))
 
 
 class DataPoint():
@@ -86,9 +87,9 @@ class DataPointFactory():
     def fromWordIndicesData(_id: int, queryWordIndices: str, relevantWordIndices: str, irrelevantWordIndices: List[str]) -> DataPoint:
         return DataPoint(
             _id,
-            filterWords(np.array(to_dense(queryWordIndices.split(",")))),
-            filterWords(np.array(to_dense(relevantWordIndices.split(",")))),
-            np.array([filterWords(to_dense(ngrams.split(","))) for ngrams in irrelevantWordIndices])
+            np.array(to_dense(queryWordIndices.split(","))),
+            np.array(to_dense(relevantWordIndices.split(","))),
+            np.array([to_dense(ngrams.split(",")) for ngrams in irrelevantWordIndices])
         )
 
 
@@ -157,7 +158,7 @@ class DataPointBatch():
                 data.append(1)
         return csr_matrix(
             (data,
-            (row_ind, col_ind)), shape=(len(batchIndices), NO_OF_TRIGRAMS)).toarray()
+            (row_ind, col_ind)), shape=(len(batchIndices), NO_OF_INDICES)).toarray()
 
 
 class RandomBatchIterator():

@@ -168,7 +168,7 @@ class QuoraFileIterator(FileIterator):
 
 
 class NaturalQuestionsFileIterator(FileIterator):
-    def __init__(self, path: str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True):
+    def __init__(self, path: str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True, shuffle=True):
         """
 
         :param path:
@@ -179,8 +179,14 @@ class NaturalQuestionsFileIterator(FileIterator):
         super().__init__(batch_size, no_of_irrelevant_samples, encodingType, path, dense)
         self._csvValues: List[List[str]] = readCsvLines(self._file)
         self._traversal_order = list(range(len(self._csvValues)))
-        random.shuffle(self._traversal_order)
+        example_ids = [line[1] for line in self._csvValues]
+        self._traversal_order_to_example_id: Dict[int, str] = { order : example_id for order, example_id in zip(self._traversal_order, example_ids)}
+        if shuffle:
+            random.shuffle(self._traversal_order)
 
+
+    def get_example_id(self, traversal_order: int) -> str:
+        return self._traversal_order_to_example_id[traversal_order]
 
     def get_samples(self, indices: List[int]) -> List[DataPoint]:
         samples: List[DataPoint] = []

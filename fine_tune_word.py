@@ -1,6 +1,5 @@
-from batchiterators.batchiterators import RandomBatchIterator
 from batchiterators.fileiterators import *
-from dssm.model_dense import *
+from dssm.model_dense_word import *
 import os
 from helpers.helpers import correct_guesses_of_dssm
 from tqdm import tqdm
@@ -27,8 +26,7 @@ EPOCHS = 30
 BATCH_SIZE = 16
 LEARNING_RATE = 0.00011702251629896198
 
-os.mkdir("finetune2")
-modelPath = "finetune2/model_bs" + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
+modelPath = "finetune_smallnq_word/model_bs" + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
 os.mkdir(modelPath)
 os.mkdir(modelPath + "/pickles")
 os.mkdir(modelPath + "/tf")
@@ -52,17 +50,17 @@ with tf.compat.v1.Session() as sess:
 
 
     trainingSet = NaturalQuestionsFileIterator(
-        "datasets/nq/train.csv",
+        "datasets_smallnq/nq/train.csv",
         batch_size=BATCH_SIZE,
         no_of_irrelevant_samples=4,
-        encodingType="NGRAM",
+        encodingType="WORD",
         dense=DENSE)
 
     validationSet = NaturalQuestionsFileIterator(
-        "datasets/nq/val.csv",
+        "datasets_smallnq/nq/val.csv",
         batch_size=BATCH_SIZE,
         no_of_irrelevant_samples=4,
-        encodingType="NGRAM",
+        encodingType="WORD",
         dense=DENSE
     )
 

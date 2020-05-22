@@ -1,10 +1,15 @@
 from batchiterators.fileiterators import *
-from dssm.model_dense import *
+from dssm.model_dense_ngram import *
 import os
 from helpers.helpers import correct_guesses_of_dssm
 from tqdm import tqdm
 import pickle
 import numpy as np
+
+def rnd(lower, higher): # Saved here
+    exp = random.randint(-higher, -lower)
+    base = 0.9 * random.random() + 0.1
+    return base * 10 ** exp
 
 def get_feed_dict(batch):
     q_batch = batch.get_q_dense()
