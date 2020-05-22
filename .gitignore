@@ -1,3 +1,6 @@
 __pycache__/
 train.csv
 validation.csv
+pretrain*
+modelsRun*
+finetune*

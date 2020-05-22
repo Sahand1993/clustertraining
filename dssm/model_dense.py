@@ -1,6 +1,6 @@
 import tensorflow as tf
 from helpers.helpers import cosine_similarity
-import os
+
 
 NO_OF_TRIGRAMS = 21895
 
