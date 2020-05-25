@@ -6,7 +6,7 @@ from typing import List, Iterable, Set
 import random
 from dssm.config import *
 
-NO_OF_INDICES = NO_OF_WORDS
+NO_OF_INDICES = NO_OF_TRIGRAMS
 
 DEFAULT_IRRELEVANT_SAMPLES = 4
 DEFAULT_BATCH_SIZE = 5
