@@ -69,12 +69,13 @@ class FileIterator(ABC):
 
 class QuoraFileIterator(FileIterator):
 
-    def __init__(self, csvPath:str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True):
+    def __init__(self, totalPath, csvPath:str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True):
         super().__init__(batch_size,
                          no_of_irrelevant_samples,
                          encodingType,
                          csvPath,
                          dense)
+        self._totalPath = totalPath
         self._questionIdToDuplicates: Dict[int, List[int]] = dict()
         self._pairIdToQuestionPair: Dict[int, Tuple[str, str]] = dict()
         self._questionIdToIndices: Dict[int, str] = dict()
@@ -117,7 +118,7 @@ class QuoraFileIterator(FileIterator):
 
 
     def index_file(self):
-        file = open("datasets/quora/total.csv")
+        file = open(self._totalPath)
         file.readline()
         for line in file.readlines():
             csvValues = line.split(CSV_SEPARATOR)
@@ -241,7 +242,7 @@ class NaturalQuestionsFileIterator(FileIterator):
 
 
 class ReutersFileIterator(FileIterator):
-    def __init__(self, dataSetPathJson: str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True):
+    def __init__(self, totalPath: str, dataSetPathJson: str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True):
         """
 
         :param set: either "train" or "val"
@@ -251,6 +252,7 @@ class ReutersFileIterator(FileIterator):
         :param encodingType:
         """
         super().__init__(batch_size, no_of_irrelevant_samples, encodingType, dense=dense)
+        self._totalPath = totalPath
         self._idToArticle: Dict[int, dict] = dict()
         self._tagToId: Dict[str, Set] = dict()
         self.NON_TAG_KEYS = ["queryArticleNGramIndices", "queryArticleWordIndices", "relevantId", "articleId", "id"]
@@ -386,7 +388,7 @@ class ReutersFileIterator(FileIterator):
 
 
     def _index(self):
-        file = open("datasets/rcv1/total.json")
+        file = open(self._totalPath)
         for i, line in enumerate(file.readlines()): # TODO remove enumerate later
             article: Dict = json.loads(line)
             _id = article["id"]
