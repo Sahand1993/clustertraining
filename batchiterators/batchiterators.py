@@ -68,6 +68,7 @@ class DataPoint():
     def get_relevant_ngrams(self) -> np.ndarray:
         return self._relevant_ngrams
 
+
     def get_irrelevant_ngrams(self) -> np.ndarray:
         return self._irrelevant_ngrams
 
@@ -82,6 +83,7 @@ class DataPointFactory():
             np.array(to_dense(relevant_ngrams.split(","))),
             np.array([to_dense(ngrams.split(",")) for ngrams in irrelevant_ngrams])
         )
+
 
     @staticmethod
     def fromWordIndicesData(_id: int, queryWordIndices: str, relevantWordIndices: str, irrelevantWordIndices: List[str]) -> DataPoint:
@@ -109,10 +111,9 @@ class DataPointBatch():
         #return self.create_batch_dense(list(map(lambda data_point: data_point.get_query_ngrams(), self.data_points)))
         return np.vstack([q for q in map(lambda data_point: data_point.get_query_ngrams(), self.data_points)])
 
+
     def get_relevant_indices(self) -> np.ndarray:
         return self.create_batch(list(map(lambda data_point: data_point.get_relevant_ngrams(), self.data_points)))
-
-
 
 
     def get_relevant_dense(self) -> np.ndarray:

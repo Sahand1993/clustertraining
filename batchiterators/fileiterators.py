@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict, Set
 import random
 import json
+import numpy as np
 
 from batchiterators.batchiterators import DataPoint, DataPointFactory, readCsvLines, sample_numbers, CSV_SEPARATOR, DataPointBatch
 
@@ -168,8 +169,46 @@ class QuoraFileIterator(FileIterator):
         return int(csvLine.split(";")[0])
 
 
+class NaturalQuestionsBM25Iterator():
+    def __init__(self, path: str, no_of_irrelevant_samples = 4):
+        self._no_of_irrelevant_samples = no_of_irrelevant_samples
+        self._examples: List[Dict[str, List[str]]] = list(map(self.get_important_fields, open(path).readlines()))
+        self._traversal_order = list(range(len(self._examples)))
+        self._current_idx = 0
+
+    def get_important_fields(self, jsonl) -> Dict[str, List[str]]:
+        jsonobj = json.loads(jsonl)
+        document_tokens = list(map(lambda token: token["token"], jsonobj["documentTokens"]))
+        question_tokens = jsonobj["questionTokens"]
+        return {"document_tokens": document_tokens, "question_tokens": question_tokens}
+
+
+    def __next__(self):
+        try:
+            example = self._examples[self._traversal_order[self._current_idx]]
+            self._current_idx += 1
+        except IndexError:
+            raise StopIteration
+
+        irrelevants: List[List[str]] = list(map(lambda idx: self._examples[idx]["document_tokens"],
+                                                np.random.choice(self._traversal_order, self._no_of_irrelevant_samples,
+                                                                 replace=False)))
+        next = {"question_tokens": example["question_tokens"],
+                "relevant_tokens": example["document_tokens"],
+                "irrelevant_tokens": irrelevants}
+
+        return next
+
+
+    def __iter__(self):
+        return self
+
+
+    def __len__(self):
+        return len(self._examples)
+
 class NaturalQuestionsFileIterator(FileIterator):
-    def __init__(self, path: str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True, shuffle=True):
+    def __init__(self, path: str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True, shuffle=True, title=False):
         """
 
         :param path:
@@ -178,6 +217,7 @@ class NaturalQuestionsFileIterator(FileIterator):
         :param encodingType: Can be NGRAM or WORD. Determines which document representation will be used.
         """
         super().__init__(batch_size, no_of_irrelevant_samples, encodingType, path, dense)
+        self._title = title
         self._csvValues: List[List[str]] = readCsvLines(self._file)
         self._traversal_order = list(range(len(self._csvValues)))
         example_ids = [line[1] for line in self._csvValues]
@@ -208,7 +248,7 @@ class NaturalQuestionsFileIterator(FileIterator):
         elif self._encodingType == "WORD":
             return DataPointFactory.fromWordIndicesData(_id, question, document, irrelevantDocuments)
         else:
-            raise ValueError("Incorrect value of self._encoding_type")
+            raise ValueError("Incorrect value of self._encodingType")
 
 
     def get_sample(self, idx: int) -> Tuple[str, str]:
@@ -217,12 +257,16 @@ class NaturalQuestionsFileIterator(FileIterator):
 
 
     def get_query_doc_pair(self, csvRow):
-        if self._encodingType == "NGRAM":
-            return csvRow[2], csvRow[3]
-        elif self._encodingType == "WORD":
-            return csvRow[4], csvRow[5]
+
+        if self._encodingType == "WORD":
+            return csvRow[6], csvRow[7]
+        elif self._encodingType == "NGRAM":
+            if self._title:
+                return csvRow[4], csvRow[2]
+            else:
+                return csvRow[4], csvRow[5]
         else:
-            raise ValueError("Incorrect value of self._encoding_type")
+            raise ValueError("Incorrect value of self._encodingType")
 
     def get_irrelevants(self, idx: int) -> List[str]:
         irrelevantIndices: List[int] \

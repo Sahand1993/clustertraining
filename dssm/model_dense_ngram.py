@@ -2,7 +2,7 @@ import tensorflow as tf
 from helpers.helpers import cosine_similarity
 
 
-NO_OF_INDICES = 21895
+NO_OF_INDICES = 14996
 
 tf.compat.v1.disable_eager_execution()
 
