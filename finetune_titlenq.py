@@ -28,13 +28,14 @@ LEARNING_RATE = 0.00011702251629896198
 
 for i in range(10):
     print()
-    modelPath = "finetune_titlenq/finetune_titlenq_{}/model_bs".format(i + 1) + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
+    modelPath = "finetune_squad/finetune_squad_{}/model_bs".format(i + 1) + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
+
     try:
-        os.mkdir("finetune_titlenq")
+        os.mkdir("finetune_squad")
     except:
         pass
     try:
-        os.mkdir("finetune_titlenq/finetune_titlenq_{}".format(i + 1))
+        os.mkdir("finetune_squad/finetune_squad_{}".format(i + 1))
         os.mkdir(modelPath)
         os.mkdir(modelPath + "/pickles")
         os.mkdir(modelPath + "/tf")

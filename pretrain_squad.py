@@ -32,25 +32,36 @@ LEARNING_RATE = 0.00011702251629896198
 for i in range(10):
     print()
     baseDir = "pretrain_squad"
+
     try:
         os.mkdir(baseDir)
-    except:
-        pass
+        print("made baseDir {}".format(baseDir))
+    except Exception as err:
+        print("Couldn't make baseDir. Error message:")
+        print(err)
+
     modelHome = os.path.join(baseDir, baseDir + "_{}".format(i + 1))
     try:
         os.mkdir(modelHome)
-    except:
-        pass
+        print("made modelHome {}".format(modelHome))
+    except Exception as err:
+        print("Couldn't make model home. Error message:")
+        print(err)
     try:
-        modelPath = os.path.join(modelHome, "/model_bs".format(i + 1) + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE))
+        modelPath = os.path.join(modelHome, "model_bs".format(i + 1) + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE))
+        print("made modelPath dir in {}".format(modelPath))
         os.mkdir(modelPath)
-    except:
-        pass
+    except Exception as err:
+        print("Couldn't make modelPath. Error message:")
+        print(err)
+
     try:
         os.mkdir(modelPath + "/pickles")
         os.mkdir(modelPath + "/tf")
-    except:
-        pass
+        print("made pickles and tf dirs in {}".format(modelPath))
+    except Exception as err:
+        print("Couldn't make pickles/ and tf/. Error message:")
+        print(err)
 
     optimizer = tf.compat.v1.train.AdamOptimizer(LEARNING_RATE).minimize(logloss)
     saver = tf.compat.v1.train.Saver(max_to_keep=20)
