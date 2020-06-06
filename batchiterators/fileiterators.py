@@ -89,7 +89,7 @@ class QuoraFileIterator(FileIterator):
 
 
     def restart(self):
-        self.current_idx = 0
+        self._current_idx = 0
         random.shuffle(self._traversal_order)
 
 
@@ -290,7 +290,7 @@ class NaturalQuestionsFileIterator(FileIterator):
 
 
     def restart(self):
-        self.current_idx = 0
+        self._current_idx = 0
         random.shuffle(self._traversal_order)
 
 
@@ -399,7 +399,7 @@ class ReutersFileIterator(FileIterator):
 
 
     def restart(self):
-        self.current_idx = 0
+        self._current_idx = 0
         random.shuffle(self._traversal_order)
 
 
