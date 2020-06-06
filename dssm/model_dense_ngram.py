@@ -1,8 +1,9 @@
 import tensorflow as tf
 from helpers.helpers import cosine_similarity
+from dssm.config import NO_OF_TRIGRAMS
 
 
-NO_OF_INDICES = 14996
+NO_OF_INDICES = NO_OF_TRIGRAMS
 
 tf.compat.v1.disable_eager_execution()
 
@@ -64,3 +65,19 @@ prob_n3 = tf.compat.v1.math.divide(tf.compat.v1.exp(r_n3), sum_r)
 prob_n4 = tf.compat.v1.math.divide(tf.compat.v1.exp(r_n4), sum_r)
 
 logloss = -tf.compat.v1.reduce_sum(tf.compat.v1.log(prob_p))
+
+def get_feed_dict(batch):
+    q_batch = batch.get_q_dense()
+    p_batch = batch.get_relevant_dense()
+    n1_batch, n2_batch, n3_batch, n4_batch = batch.get_irrelevant_dense()
+
+    feed_dict = {
+    x_q: q_batch,
+    x_p: p_batch,
+    x_n1: n1_batch,
+    x_n2: n2_batch,
+    x_n3: n3_batch,
+    x_n4: n4_batch
+    }
+
+    return feed_dict

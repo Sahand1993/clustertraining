@@ -9,21 +9,21 @@ from batchiterators.batchiterators import DataPoint, DataPointFactory, readCsvLi
 
 class FileIterator(ABC):
 
-    def __init__(self, batch_size = 5, no_of_irrelevant_samples = 4, encodingType ="NGRAM", path=None, dense=True):
-        if path:
-            self._file = open(path)
+    def __init__(self, batch_size = 5, no_of_irrelevant_samples = 4, encodingType ="NGRAM", csvPath=None, dense=True):
+        if csvPath:
+            self._file = open(csvPath)
             self._file.readline()
         self._batch_size = batch_size
         self._no_of_irrelevant_samples = no_of_irrelevant_samples
         self._traversal_order: List[int] = None
-        self.current_idx = 0
+        self._current_idx = 0
         self._encodingType = encodingType
         self._dense = dense
 
 
     def __next__(self) -> DataPointBatch:
-        indices: List[int] = self._traversal_order[self.current_idx: self.current_idx + self._batch_size]
-        self.current_idx += self._batch_size
+        indices: List[int] = self._traversal_order[self._current_idx: self._current_idx + self._batch_size]
+        self._current_idx += self._batch_size
         if self._dense:
             if len(indices) == 0:
                 raise StopIteration
@@ -170,18 +170,23 @@ class QuoraFileIterator(FileIterator):
 
 
 class NaturalQuestionsBM25Iterator():
-    def __init__(self, path: str, no_of_irrelevant_samples = 4):
+    def __init__(self, path: str, no_of_irrelevant_samples = 4, title=True):
         self._no_of_irrelevant_samples = no_of_irrelevant_samples
-        self._examples: List[Dict[str, List[str]]] = list(map(self.get_important_fields, open(path).readlines()))
+        self._title = title
+        self._examples: List[Dict[str, List[str]]] = list(map(self.get_important_fields, open(path)))
         self._traversal_order = list(range(len(self._examples)))
         self._current_idx = 0
 
+
     def get_important_fields(self, jsonl) -> Dict[str, List[str]]:
         jsonobj = json.loads(jsonl)
-        document_tokens = list(map(lambda token: token["token"], jsonobj["documentTokens"]))
-        question_tokens = jsonobj["questionTokens"]
-        return {"document_tokens": document_tokens, "question_tokens": question_tokens}
-
+        if self._title:
+            document_tokens: List[str] = jsonobj["documentTitleTokens"]
+        else:
+            document_tokens: List[str] = jsonobj["documentTokens"]
+        question_tokens: List[str] = jsonobj["questionTokens"]
+        example_id = jsonobj["exampleId"]
+        return {"document_tokens": document_tokens, "question_tokens": question_tokens, "id": example_id}
 
     def __next__(self):
         try:
@@ -193,7 +198,8 @@ class NaturalQuestionsBM25Iterator():
         irrelevants: List[List[str]] = list(map(lambda idx: self._examples[idx]["document_tokens"],
                                                 np.random.choice(self._traversal_order, self._no_of_irrelevant_samples,
                                                                  replace=False)))
-        next = {"question_tokens": example["question_tokens"],
+        next = {"id": example["id"],
+               "question_tokens": example["question_tokens"],
                 "relevant_tokens": example["document_tokens"],
                 "irrelevant_tokens": irrelevants}
 
@@ -207,16 +213,19 @@ class NaturalQuestionsBM25Iterator():
     def __len__(self):
         return len(self._examples)
 
+    def restart(self):
+        self._current_idx = 0
+
 class NaturalQuestionsFileIterator(FileIterator):
-    def __init__(self, path: str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True, shuffle=True, title=False):
+    def __init__(self, csvPath: str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True, shuffle=True, title=False):
         """
 
-        :param path:
+        :param csvPath:
         :param batch_size:
         :param no_of_irrelevant_samples:
         :param encodingType: Can be NGRAM or WORD. Determines which document representation will be used.
         """
-        super().__init__(batch_size, no_of_irrelevant_samples, encodingType, path, dense)
+        super().__init__(batch_size, no_of_irrelevant_samples, encodingType, csvPath, dense)
         self._title = title
         self._csvValues: List[List[str]] = readCsvLines(self._file)
         self._traversal_order = list(range(len(self._csvValues)))
@@ -286,7 +295,7 @@ class NaturalQuestionsFileIterator(FileIterator):
 
 
 class ReutersFileIterator(FileIterator):
-    def __init__(self, totalPath: str, dataSetPathJson: str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True):
+    def __init__(self, totalPath: str, dataSetPartPathJson: str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True):
         """
 
         :param set: either "train" or "val"
@@ -301,7 +310,7 @@ class ReutersFileIterator(FileIterator):
         self._tagToId: Dict[str, Set] = dict()
         self.NON_TAG_KEYS = ["queryArticleNGramIndices", "queryArticleWordIndices", "relevantId", "articleId", "id"]
         self._index()
-        self._traversal_order: List[int] = self._getArticleIdsFromFile(dataSetPathJson)
+        self._traversal_order: List[int] = self._getArticleIdsFromFile(dataSetPartPathJson)
         random.shuffle(self._traversal_order)
         self.TAG_KEYS = [
                 "c11",
@@ -460,3 +469,83 @@ class ReutersFileIterator(FileIterator):
             ids.append(jsonObj["id"])
 
         return ids
+
+
+class SquadFileIterator(FileIterator):
+    def __init__(self, totalPath, datasetPartPath, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True, shuffle=True):
+        super().__init__(batch_size,
+                         no_of_irrelevant_samples,
+                         encodingType,
+                         datasetPartPath,
+                         dense)
+        self._shuffle = shuffle
+        self._totalPath = totalPath
+        self._articleIdToQuestions: Dict[str, List[Dict]] = {}
+        self._questionIds: List[str] = []
+        self._questions: Dict[str, Dict[str, str]] = {}
+        self.index_file()
+        self._traversal_order: List[int] = list(range(len(self._questionIds)))
+        if shuffle:
+            random.shuffle(self._traversal_order)
+
+
+    def restart(self):
+        self._current_idx = 0
+        if self._shuffle:
+            random.shuffle(self._traversal_order)
+
+
+    def get_samples(self, indices: List[int]) -> List[DataPoint]:
+        samples: List[DataPoint] = []
+        for idx in indices:
+            dataPoint = self.get_data_point(idx)
+            samples.append(dataPoint)
+
+        return samples
+
+
+    def get_data_point(self, idx: int) -> DataPoint:
+        questionId = self._questionIds[idx]
+        question = self._questions[questionId]
+        questionIndices = question["question_indices"]
+        titleIndices = question["title_indices"]
+        irrelevants = self.get_irrelevants(questionId)
+        if self._encodingType == "NGRAM":
+            return DataPointFactory.fromNGramsData(int(questionId), questionIndices, titleIndices, irrelevants)
+        elif self._encodingType == "WORD":
+            return DataPointFactory.fromWordIndicesData(int(questionId), questionIndices, titleIndices, irrelevants)
+
+    def get_irrelevants(self, q_id: str) -> List[str]:
+        articleId = self._questions[q_id]["article_id"]
+        irrelevants = []
+        while len(irrelevants) < 4:
+            randomQuestionId = random.choice(self._questionIds)
+            randomQuestion = self._questions[randomQuestionId]
+            randomArticleId = randomQuestion["article_id"]
+            if randomArticleId != articleId:
+                irrelevants.append(randomQuestion["title_indices"])
+
+        return irrelevants
+
+    def index_file(self):
+        total = open(self._totalPath)
+        total.readline()
+        for line in total:
+            csvValues = line.split(";")
+            qId = csvValues[0]
+            articleId = csvValues[1]
+            if self._encodingType == "NGRAM":
+                question_indices = csvValues[2]
+                title_indices = csvValues[4]
+            elif self._encodingType == "WORD":
+                question_indices = csvValues[3]
+                title_indices = csvValues[5]
+            else:
+                raise RuntimeError("Wrong value of self._encodingType.")
+
+            self._questionIds.append(qId)
+            self._questions[qId] = {"question_indices": question_indices, "title_indices": title_indices, "article_id": articleId}
+            if (articleId in self._articleIdToQuestions):
+                self._articleIdToQuestions[articleId].append({"question_id": qId,
+                                                              "question_indices": question_indices,
+                                                              "title_indices": title_indices})
