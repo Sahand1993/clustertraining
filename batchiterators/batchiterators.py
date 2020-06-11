@@ -18,7 +18,6 @@ def to_dense(indices: List[str]) -> List[int]:
     array = np.zeros((1, NO_OF_INDICES))
     #print(indices)
     for freq_index in indices:
-        # TODO: Vänta på preprocessor och se om du kan slippa använda parenteser över huvud taget.
         freq, index = freq_index.split(" ")
         array[0][int(index)] = int(freq)
     return array
@@ -59,6 +58,10 @@ class DataPoint():
         self._query_ngrams: np.ndarray = query_ngrams
         self._relevant_ngrams: np.ndarray = relevant_ngrams
         self._irrelevant_ngrams: np.ndarray = irrelevant_ngrams
+
+
+    def get_id(self):
+        return self._id
 
 
     def get_query_ngrams(self) -> np.ndarray:
@@ -160,6 +163,9 @@ class DataPointBatch():
         return csr_matrix(
             (data,
             (row_ind, col_ind)), shape=(len(batchIndices), NO_OF_INDICES)).toarray()
+
+    def get_ids(self) -> List[str]:
+        return list(map(lambda data_point: data_point.get_id(), self.data_points))
 
 
 class RandomBatchIterator():

@@ -72,12 +72,12 @@ def get_feed_dict(batch):
     n1_batch, n2_batch, n3_batch, n4_batch = batch.get_irrelevant_dense()
 
     feed_dict = {
-    x_q: q_batch,
-    x_p: p_batch,
-    x_n1: n1_batch,
-    x_n2: n2_batch,
-    x_n3: n3_batch,
-    x_n4: n4_batch
+        x_q: q_batch,
+        x_p: p_batch,
+        x_n1: n1_batch,
+        x_n2: n2_batch,
+        x_n3: n3_batch,
+        x_n4: n4_batch
     }
 
     return feed_dict

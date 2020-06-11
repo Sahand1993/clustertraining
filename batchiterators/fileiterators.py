@@ -70,7 +70,7 @@ class FileIterator(ABC):
 
 class QuoraFileIterator(FileIterator):
 
-    def __init__(self, totalPath, csvPath:str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True):
+    def __init__(self, totalPath, csvPath:str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True, shuffle=True):
         super().__init__(batch_size,
                          no_of_irrelevant_samples,
                          encodingType,
@@ -85,12 +85,15 @@ class QuoraFileIterator(FileIterator):
         self._questionIds = list(self._questionIdToDuplicates.keys())
         self._total_samples = len(self._duplicate_pair_ids)
         self._traversal_order = self._get_traversal_order(csvPath) #[_id for _id in self._duplicate_pair_ids] # TODO Implement with ability to provide training or val set but still index all, like in reuters
-        random.shuffle(self._traversal_order)
+        self.shuffle = shuffle
+        if shuffle:
+            random.shuffle(self._traversal_order)
 
 
     def restart(self):
         self._current_idx = 0
-        random.shuffle(self._traversal_order)
+        if self.shuffle:
+            random.shuffle(self._traversal_order)
 
 
     def get_samples(self, pairIds: List[int]) -> List[DataPoint]:
@@ -231,7 +234,8 @@ class NaturalQuestionsFileIterator(FileIterator):
         self._traversal_order = list(range(len(self._csvValues)))
         example_ids = [line[1] for line in self._csvValues]
         self._traversal_order_to_example_id: Dict[int, str] = { order : example_id for order, example_id in zip(self._traversal_order, example_ids)}
-        if shuffle:
+        self._shuffle = shuffle
+        if self._shuffle:
             random.shuffle(self._traversal_order)
 
 
@@ -268,12 +272,17 @@ class NaturalQuestionsFileIterator(FileIterator):
     def get_query_doc_pair(self, csvRow):
 
         if self._encodingType == "WORD":
-            return csvRow[6], csvRow[7]
-        elif self._encodingType == "NGRAM":
+            questionWordIndices = csvRow[6]
             if self._title:
-                return csvRow[4], csvRow[2]
+                return questionWordIndices, csvRow[3]
             else:
-                return csvRow[4], csvRow[5]
+                return questionWordIndices, csvRow[7]
+        elif self._encodingType == "NGRAM":
+            questionNGramIndices = csvRow[4]
+            if self._title:
+                return questionNGramIndices, csvRow[2]
+            else:
+                return questionNGramIndices, csvRow[5]
         else:
             raise ValueError("Incorrect value of self._encodingType")
 
@@ -291,7 +300,8 @@ class NaturalQuestionsFileIterator(FileIterator):
 
     def restart(self):
         self._current_idx = 0
-        random.shuffle(self._traversal_order)
+        if self._shuffle:
+            random.shuffle(self._traversal_order)
 
 
 class ReutersFileIterator(FileIterator):
@@ -481,10 +491,10 @@ class SquadFileIterator(FileIterator):
         self._shuffle = shuffle
         self._totalPath = totalPath
         self._articleIdToQuestions: Dict[str, List[Dict]] = {}
-        self._questionIds: List[str] = []
+        self._rowNumbers: List[str] = []
         self._questions: Dict[str, Dict[str, str]] = {}
         self.index_file()
-        self._traversal_order: List[int] = list(range(len(self._questionIds)))
+        self._traversal_order: List[int] = list(range(len(self._rowNumbers)))
         if shuffle:
             random.shuffle(self._traversal_order)
 
@@ -505,24 +515,25 @@ class SquadFileIterator(FileIterator):
 
 
     def get_data_point(self, idx: int) -> DataPoint:
-        questionId = self._questionIds[idx]
-        question = self._questions[questionId]
+        rowNumber = self._rowNumbers[idx]
+        question = self._questions[rowNumber]
+        questionId = question["question_id"]
         questionIndices = question["question_indices"]
         titleIndices = question["title_indices"]
-        irrelevants = self.get_irrelevants(questionId)
+        irrelevants = self.get_irrelevants(rowNumber)
         if self._encodingType == "NGRAM":
-            return DataPointFactory.fromNGramsData(int(questionId), questionIndices, titleIndices, irrelevants)
+            return DataPointFactory.fromNGramsData(questionId, questionIndices, titleIndices, irrelevants)
         elif self._encodingType == "WORD":
-            return DataPointFactory.fromWordIndicesData(int(questionId), questionIndices, titleIndices, irrelevants)
+            return DataPointFactory.fromWordIndicesData(questionId, questionIndices, titleIndices, irrelevants)
 
-    def get_irrelevants(self, q_id: str) -> List[str]:
-        articleId = self._questions[q_id]["article_id"]
+    def get_irrelevants(self, rowNumber: str) -> List[str]:
+        questionId = self._questions[rowNumber]["question_id"]
         irrelevants = []
         while len(irrelevants) < 4:
-            randomQuestionId = random.choice(self._questionIds)
+            randomQuestionId = random.choice(self._rowNumbers)
             randomQuestion = self._questions[randomQuestionId]
-            randomArticleId = randomQuestion["article_id"]
-            if randomArticleId != articleId:
+            randomQuestionId = randomQuestion["question_id"]
+            if randomQuestionId != questionId:
                 irrelevants.append(randomQuestion["title_indices"])
 
         return irrelevants
@@ -532,8 +543,8 @@ class SquadFileIterator(FileIterator):
         total.readline()
         for line in total:
             csvValues = line.split(";")
-            qId = csvValues[0]
-            articleId = csvValues[1]
+            rowNo = csvValues[0]
+            questionId = csvValues[1]
             if self._encodingType == "NGRAM":
                 question_indices = csvValues[2]
                 title_indices = csvValues[4]
@@ -543,9 +554,85 @@ class SquadFileIterator(FileIterator):
             else:
                 raise RuntimeError("Wrong value of self._encodingType.")
 
-            self._questionIds.append(qId)
-            self._questions[qId] = {"question_indices": question_indices, "title_indices": title_indices, "article_id": articleId}
-            if (articleId in self._articleIdToQuestions):
-                self._articleIdToQuestions[articleId].append({"question_id": qId,
+            self._rowNumbers.append(rowNo)
+            self._questions[rowNo] = {"question_indices": question_indices, "title_indices": title_indices, "question_id": questionId}
+            if (questionId in self._articleIdToQuestions):
+                self._articleIdToQuestions[questionId].append({"question_id": questionId,
                                                               "question_indices": question_indices,
                                                               "title_indices": title_indices})
+
+
+class WikiQAFileIterator(FileIterator):
+    def __init__(self, totalPath, datasetPartPath, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True, shuffle=True):
+        super().__init__(batch_size,
+                         no_of_irrelevant_samples,
+                         encodingType,
+                         datasetPartPath,
+                         dense)
+        self._shuffle = shuffle
+        self._totalPath = totalPath
+        self._docIdToQuestions: Dict[str, List[Dict]] = {}
+        self._ids: List[str] = []
+        self._idToQuestion: Dict[str, Dict[str, str]] = {}
+        self.index_file()
+        self._traversal_order: List[int] = self._ids
+        if shuffle:
+            random.shuffle(self._traversal_order)
+
+
+    def restart(self):
+        self._current_idx = 0
+        if self._shuffle:
+            random.shuffle(self._traversal_order)
+
+
+    def get_samples(self, indices: List[int]) -> List[DataPoint]:
+        samples: List[DataPoint] = []
+        for idx in indices:
+            dataPoint = self.get_data_point(idx)
+            samples.append(dataPoint)
+
+        return samples
+
+    def get_data_point(self, id):
+        question = self._idToQuestion[id]
+        _id: int = question["id"]
+        questionId = question["question_id"]
+        questionIndices = question["question_indices"]
+        titleIndices = question["title_indices"]
+        documentId = question["document_id"]
+        irrelevants = self.get_irrelevants(id)
+        if self._encodingType == "NGRAM":
+            return DataPointFactory.fromNGramsData(_id, questionIndices, titleIndices, irrelevants)
+        elif self._encodingType == "WORD":
+            return DataPointFactory.fromWordIndicesData(_id, questionIndices, titleIndices, irrelevants)
+
+
+    def get_irrelevants(self, q_id: int) -> List[str]:
+        question = self._idToQuestion[q_id]
+        docId = question["document_id"]
+        irrelevants: List[str] = []
+        while len(irrelevants) < self._no_of_irrelevant_samples:
+            random_id = random.choice(self._ids)
+            random_question = self._idToQuestion[random_id]
+            if random_question["document_id"] != docId:
+                irrelevants.append(random_question["title_indices"])
+
+        return irrelevants
+
+
+    def index_file(self):
+        total = open(self._totalPath)
+        total.readline()
+        for line in total:
+            csvValues = line.split(";")
+            _id, questionId, docId, questionNGramIndices, questionWordIndices, titleNGramIndices, titleWordIndices = csvValues
+            self._ids.append(_id)
+            if self._encodingType == "NGRAM":
+                self._idToQuestion[_id] = {"id": _id, "question_id": questionId, "document_id": docId, "question_indices": questionNGramIndices, "title_indices": titleNGramIndices}
+            elif self._encodingType == "WORD":
+                self._idToQuestion[_id] = {"id": _id, "question_id": questionId, "document_id": docId,
+                                           "question_indices": questionWordIndices, "title_indices": titleWordIndices}
+
+            # TODO: Take out csv values
+

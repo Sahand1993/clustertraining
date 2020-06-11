@@ -36,7 +36,7 @@ print("group accuracies on titles:")
 for i in range(10):
     testSet = NaturalQuestionsBM25Iterator(
         "/Users/sahandzarrinkoub/School/year5/thesis/datasets/preprocessed_datasets_nqtitles/nq/test.jsonl",
-        no_of_irrelevant_samples=4,
+        no_of_irrelevant_samples=0,
         title=True)
     correct_val = 0
     for example in tqdm(testSet):
