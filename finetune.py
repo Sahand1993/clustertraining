@@ -26,16 +26,16 @@ EPOCHS = 20
 BATCH_SIZE = 16
 LEARNING_RATE = 0.00011702251629896198
 
-for i in range(10):
+for i in [1,6]:
     print()
-    modelPath = "finetune_squad/finetune_squad_{}/model_bs".format(i + 1) + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
+    modelPath = "finetune/finetune_{}/model_bs".format(i) + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
 
     try:
-        os.mkdir("finetune_squad")
+        os.mkdir("finetune")
     except:
         pass
     try:
-        os.mkdir("finetune_squad/finetune_squad_{}".format(i + 1))
+        os.mkdir("finetune/finetune_{}".format(i))
         os.mkdir(modelPath)
         os.mkdir(modelPath + "/pickles")
         os.mkdir(modelPath + "/tf")
@@ -59,23 +59,23 @@ for i in range(10):
 
         DENSE = True
 
-        trainingSet = NaturalQuestionsFileIterator(
-            "datasets_squad/nq/train.csv",
+        trainingSet = WikiQAFileIterator(
+            "datasets/wikiqa/data.csv",
+            "datasets/wikiqa/train.csv",
             batch_size=BATCH_SIZE,
             no_of_irrelevant_samples=4,
             encodingType="NGRAM",
             dense=DENSE,
-            title=True
-        )
+            shuffle=True)
 
-        validationSet = NaturalQuestionsFileIterator(
-            "datasets_squad/nq/val.csv",
+        validationSet = WikiQAFileIterator(
+            "datasets/wikiqa/data.csv",
+            "datasets/wikiqa/val.csv",
             batch_size=BATCH_SIZE,
             no_of_irrelevant_samples=4,
             encodingType="NGRAM",
             dense=DENSE,
-            title=True
-        )
+            shuffle=True)
 
         try:
             iterations_done = pickle.load(open(modelPath + "/pickles/i.pic", "rb"))

@@ -554,12 +554,17 @@ class SquadFileIterator(FileIterator):
             else:
                 raise RuntimeError("Wrong value of self._encodingType.")
 
-            self._rowNumbers.append(rowNo)
+
             self._questions[rowNo] = {"question_indices": question_indices, "title_indices": title_indices, "question_id": questionId}
             if (questionId in self._articleIdToQuestions):
                 self._articleIdToQuestions[questionId].append({"question_id": questionId,
                                                               "question_indices": question_indices,
                                                               "title_indices": title_indices})
+
+        for line in self._file:
+            csvValues = line.split(";")
+            rowNo = csvValues[0]
+            self._rowNumbers.append(rowNo)
 
 
 class WikiQAFileIterator(FileIterator):
@@ -572,10 +577,11 @@ class WikiQAFileIterator(FileIterator):
         self._shuffle = shuffle
         self._totalPath = totalPath
         self._docIdToQuestions: Dict[str, List[Dict]] = {}
-        self._ids: List[str] = []
+        self._all_ids: List[str] = []
+        self._datasetPartIds: List[str] = []
         self._idToQuestion: Dict[str, Dict[str, str]] = {}
         self.index_file()
-        self._traversal_order: List[int] = self._ids
+        self._traversal_order: List[str] = self._datasetPartIds
         if shuffle:
             random.shuffle(self._traversal_order)
 
@@ -613,7 +619,7 @@ class WikiQAFileIterator(FileIterator):
         docId = question["document_id"]
         irrelevants: List[str] = []
         while len(irrelevants) < self._no_of_irrelevant_samples:
-            random_id = random.choice(self._ids)
+            random_id = random.choice(self._all_ids)
             random_question = self._idToQuestion[random_id]
             if random_question["document_id"] != docId:
                 irrelevants.append(random_question["title_indices"])
@@ -627,7 +633,7 @@ class WikiQAFileIterator(FileIterator):
         for line in total:
             csvValues = line.split(";")
             _id, questionId, docId, questionNGramIndices, questionWordIndices, titleNGramIndices, titleWordIndices = csvValues
-            self._ids.append(_id)
+            self._all_ids.append(_id)
             if self._encodingType == "NGRAM":
                 self._idToQuestion[_id] = {"id": _id, "question_id": questionId, "document_id": docId, "question_indices": questionNGramIndices, "title_indices": titleNGramIndices}
             elif self._encodingType == "WORD":
@@ -635,4 +641,8 @@ class WikiQAFileIterator(FileIterator):
                                            "question_indices": questionWordIndices, "title_indices": titleWordIndices}
 
             # TODO: Take out csv values
+        for line in self._file:
+            csvValues = line.split(";")
+            _id, questionId, docId, questionNGramIndices, questionWordIndices, titleNGramIndices, titleWordIndices = csvValues
+            self._datasetPartIds.append(_id)
 

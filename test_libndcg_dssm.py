@@ -4,7 +4,7 @@ import numpy as np
 from scipy.linalg import norm
 from sklearn.metrics import ndcg_score
 
-from batchiterators.fileiterators import NaturalQuestionsFileIterator
+from batchiterators.fileiterators import NaturalQuestionsFileIterator, WikiQAFileIterator
 from dssm.model_dense_ngram import *
 
 from tqdm import tqdm
@@ -14,14 +14,14 @@ optimizer = tf.compat.v1.train.AdamOptimizer(LEARNING_RATE).minimize(logloss)
 
 modelPath = ""
 
-dssmTestSetTotal = NaturalQuestionsFileIterator(
-    "datasets_squad_new/nq/test.csv",
+dssmTestSetTotal = WikiQAFileIterator(
+    "datasets/wikiqa/data.csv",
+    "datasets/wikiqa/test.csv",
     batch_size=1,
     no_of_irrelevant_samples=4,
     encodingType="NGRAM",
     dense=True,
-    shuffle=False,
-    title=True)
+    shuffle=False)
 
 def get_feed_dict(batch):
     q_batch = batch.get_q_dense()
@@ -64,7 +64,7 @@ def get_scores(query_vec: np.ndarray):
 
 #saver = tf.compat.v1.train.Saver()
 #saver.restore(sess, modelPath)
-for i in range(9):
+for i in range(10):
     query_vecs = []
     doc_vecs = []
     sess = tf.compat.v1.Session()

@@ -2,7 +2,7 @@ import numpy as np
 from typing import Dict
 from tqdm import tqdm
 
-from batchiterators.fileiterators import WikiQAFileIterator
+from batchiterators.fileiterators import WikiQAFileIterator, SquadFileIterator
 from helpers.helpers import correct_guesses_of_dssm
 
 LEARNING_RATE = 0.00011702251629896198
@@ -51,12 +51,27 @@ def get_feed_dict(batch):
 
 
 # Load model
-modelPaths = []
+modelPaths = [
+    "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_1/model_bs16_lr0.00011702251629896198/tf/dssm-20",
+
+# these worked
+# "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_2/model_bs16_lr0.00011702251629896198/tf/dssm-19",
+# "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_3/model_bs16_lr0.00011702251629896198/tf/dssm-20",
+# "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_4/model_bs16_lr0.00011702251629896198/tf/dssm-20",
+# "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_5/model_bs16_lr0.00011702251629896198/tf/dssm-19",
+
+    "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_6/model_bs16_lr0.00011702251629896198/tf/dssm-19",
+    "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_7/model_bs16_lr0.00011702251629896198/tf/dssm-20",
+    "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_8/model_bs16_lr0.00011702251629896198/tf/dssm-19",
+
+#    "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_9/model_bs16_lr0.00011702251629896198/tf/dssm-20",
+#    "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_10/model_bs16_lr0.00011702251629896198/tf/dssm-20"
+]
 
 saver = tf.compat.v1.train.Saver()
 sess = tf.compat.v1.Session()
 
-def test_group_acc(modelPath: str):
+def test_group_acc(modelPath):
     print("\n " + modelPath)
     dssmTestSetTotal.restart()
     saver.restore(sess, modelPath)
@@ -77,3 +92,4 @@ def test_group_acc(modelPath: str):
 
 for modelPath in modelPaths:
     test_group_acc(modelPath)
+    dssmTestSetTotal.restart()
