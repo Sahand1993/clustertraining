@@ -132,8 +132,8 @@ class TestFileIterators(TestCase):
 
     def test_squad_get_samples(self):
         self.loadSquadQuestions()
-        iterator = SquadFileIterator("/Users/sahandzarrinkoub/School/year5/thesis/datasets/preprocessed_datasets_nqtitles/squad/data.csv",
-                                     "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/datasets/squad/data.csv",
+        iterator = SquadFileIterator("/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/datasets/squad/data.csv",
+                                     "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/datasets/squad/train.csv",
                                      batch_size = 1,
                                      no_of_irrelevant_samples=2,
                                      encodingType="NGRAM",

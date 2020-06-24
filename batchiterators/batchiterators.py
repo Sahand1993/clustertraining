@@ -48,13 +48,15 @@ def sample_numbers(end: int, size: int, exclude: int) -> List[int]:
 
 class DataPoint():
 
-    def __init__(self, _id: int, query_ngrams: np.ndarray, relevant_ngrams: np.ndarray, irrelevant_ngrams: np.ndarray):
+    def __init__(self, _id: str, qId: str, docId: str, query_ngrams: np.ndarray, relevant_ngrams: np.ndarray, irrelevant_ngrams: np.ndarray):
         """
         :param query_ngrams: vector of integers
         :param relevant_ngrams: as above
         :param irrelevant_ngrams: matrix of integers, shape is [no_of_irrelevants, None]
         """
         self._id = _id
+        self._qId = qId
+        self._docId = docId
         self._query_ngrams: np.ndarray = query_ngrams
         self._relevant_ngrams: np.ndarray = relevant_ngrams
         self._irrelevant_ngrams: np.ndarray = irrelevant_ngrams
@@ -62,6 +64,14 @@ class DataPoint():
 
     def get_id(self):
         return self._id
+
+
+    def get_qId(self):
+        return self._qId
+
+
+    def get_docId(self):
+        return self._docId
 
 
     def get_query_ngrams(self) -> np.ndarray:
@@ -79,9 +89,11 @@ class DataPoint():
 class DataPointFactory():
 
     @staticmethod
-    def fromNGramsData(_id: int, query_ngrams: str, relevant_ngrams: str, irrelevant_ngrams: List[str]) -> DataPoint:
+    def fromNGramsData(_id: str, qId: str, docId: str, query_ngrams: str, relevant_ngrams: str, irrelevant_ngrams: List[str]) -> DataPoint:
         return DataPoint(
             _id,
+            qId,
+            docId,
             np.array(to_dense(query_ngrams.split(","))),
             np.array(to_dense(relevant_ngrams.split(","))),
             np.array([to_dense(ngrams.split(",")) for ngrams in irrelevant_ngrams])
@@ -89,9 +101,11 @@ class DataPointFactory():
 
 
     @staticmethod
-    def fromWordIndicesData(_id: int, queryWordIndices: str, relevantWordIndices: str, irrelevantWordIndices: List[str]) -> DataPoint:
+    def fromWordIndicesData(_id: str, qId: str, docId: str, queryWordIndices: str, relevantWordIndices: str, irrelevantWordIndices: List[str]) -> DataPoint:
         return DataPoint(
             _id,
+            qId,
+            docId,
             np.array(to_dense(queryWordIndices.split(","))),
             np.array(to_dense(relevantWordIndices.split(","))),
             np.array([to_dense(ngrams.split(",")) for ngrams in irrelevantWordIndices])
@@ -164,8 +178,17 @@ class DataPointBatch():
             (data,
             (row_ind, col_ind)), shape=(len(batchIndices), NO_OF_INDICES)).toarray()
 
+
     def get_ids(self) -> List[str]:
         return list(map(lambda data_point: data_point.get_id(), self.data_points))
+
+
+    def get_qIds(self) -> List[str]:
+        return list(map(lambda data_point: data_point.get_qId(), self.data_points))
+
+
+    def get_docIds(self) -> List[str]:
+        return list(map(lambda data_point: data_point.get_docId(), self.data_points))
 
 
 class RandomBatchIterator():

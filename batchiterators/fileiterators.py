@@ -103,7 +103,7 @@ class QuoraFileIterator(FileIterator):
             q2_id: int = self._pairIdToQuestionPair[pairId][1]
             question1_indices: str = self._questionIdToIndices[q1_id]
             question2_indices: str = self._questionIdToIndices[q2_id]
-            dataPoint: DataPoint = DataPointFactory.fromNGramsData(pairId, question1_indices, question2_indices, self.get_irrelevants(pairId))
+            dataPoint: DataPoint = DataPointFactory.fromNGramsData(pairId, str(q1_id), str(q2_id), question1_indices, question2_indices, self.get_irrelevants(pairId))
             samples.append(dataPoint)
 
         return samples
@@ -342,9 +342,9 @@ class NaturalQuestionsFileIterator(FileIterator):
         irrelevantDocuments: List[str] = self.get_irrelevants(idx)
         question, document = self.get_query_doc_pair(csvRow)
         if self._encodingType == "NGRAM":
-            return DataPointFactory.fromNGramsData(_id, question, document, irrelevantDocuments)
+            return DataPointFactory.fromNGramsData(_id, None, None, question, document, irrelevantDocuments)
         elif self._encodingType == "WORD":
-            return DataPointFactory.fromWordIndicesData(_id, question, document, irrelevantDocuments)
+            return DataPointFactory.fromWordIndicesData(_id, None, None, question, document, irrelevantDocuments)
         else:
             raise ValueError("Incorrect value of self._encodingType")
 
@@ -475,15 +475,20 @@ class ReutersFileIterator(FileIterator):
         samples: List[DataPoint] = []
         for _id in ids:
             queryArticle = self._idToArticle[_id]
-            relevantArticle = self._idToArticle[queryArticle["relevantId"]]
+            relevantId = queryArticle["relevantId"]
+            relevantArticle = self._idToArticle[relevantId]
             irrelevants: List[str] = self.get_irrelevants(_id)
             if self._encodingType == "NGRAM":
                 samples.append(DataPointFactory.fromNGramsData(_id,
+                                                               str(_id),
+                                                               relevantId,
                                                                queryArticle["queryArticleNGramIndices"],
                                                                relevantArticle["queryArticleNGramIndices"],
                                                                irrelevants))
             elif self._encodingType == "WORD":
                 samples.append(DataPointFactory.fromWordIndicesData(_id,
+                                                                    str(_id),
+                                                                    relevantId,
                                                                     queryArticle["queryArticleWordIndices"],
                                                                     relevantArticle["queryArticleWordIndices"],
                                                                     irrelevants))
@@ -576,10 +581,10 @@ class SquadFileIterator(FileIterator):
         self._shuffle = shuffle
         self._totalPath = totalPath
         self._articleIdToQuestions: Dict[str, List[Dict]] = {}
-        self._rowNumbers: List[str] = []
+        self._ids: List[str] = []
         self._questions: Dict[str, Dict[str, str]] = {}
         self.index_file()
-        self._traversal_order: List[int] = list(range(len(self._rowNumbers)))
+        self._traversal_order: List[int] = list(range(len(self._ids)))
         if shuffle:
             random.shuffle(self._traversal_order)
 
@@ -600,23 +605,24 @@ class SquadFileIterator(FileIterator):
 
 
     def get_data_point(self, idx: int) -> DataPoint:
-        rowNumber = self._rowNumbers[idx]
-        question = self._questions[rowNumber]
+        _id = self._ids[idx]
+        question = self._questions[_id]
         questionId = question["question_id"]
+        docId = question["title_id"]
         questionIndices = question["question_indices"]
         titleIndices = question["title_indices"]
-        irrelevants = self.get_irrelevants(rowNumber)
+        irrelevants = self.get_irrelevants(_id)
         if self._encodingType == "NGRAM":
-            return DataPointFactory.fromNGramsData(questionId, questionIndices, titleIndices, irrelevants)
+            return DataPointFactory.fromNGramsData(questionId, questionId, docId, questionIndices, titleIndices, irrelevants)
         elif self._encodingType == "WORD":
-            return DataPointFactory.fromWordIndicesData(questionId, questionIndices, titleIndices, irrelevants)
+            return DataPointFactory.fromWordIndicesData(questionId, questionId, docId, questionIndices, titleIndices, irrelevants)
 
     def get_irrelevants(self, rowNumber: str) -> List[str]:
         titleId = self._questions[rowNumber]["title_id"]
         irrelevants = []
         while len(irrelevants) < 4:
-            randomQuestionId = random.choice(self._rowNumbers)
-            randomQuestion = self._questions[randomQuestionId]
+            randomId = random.choice(self._ids)
+            randomQuestion = self._questions[randomId]
             randomTitleId = randomQuestion["title_id"]
             if randomTitleId != titleId:
                 irrelevants.append(randomQuestion["title_indices"])
@@ -650,7 +656,7 @@ class SquadFileIterator(FileIterator):
         for line in self._file:
             csvValues = line.split(";")
             _id = csvValues[0]
-            self._rowNumbers.append(_id)
+            self._ids.append(_id)
 
 
 class WikiQAFileIterator(FileIterator):
@@ -695,9 +701,9 @@ class WikiQAFileIterator(FileIterator):
         documentId = question["document_id"]
         irrelevants = self.get_irrelevants(id)
         if self._encodingType == "NGRAM":
-            return DataPointFactory.fromNGramsData(_id, questionIndices, titleIndices, irrelevants)
+            return DataPointFactory.fromNGramsData(_id, questionId, documentId, questionIndices, titleIndices, irrelevants)
         elif self._encodingType == "WORD":
-            return DataPointFactory.fromWordIndicesData(_id, questionIndices, titleIndices, irrelevants)
+            return DataPointFactory.fromWordIndicesData(_id, questionId, documentId, questionIndices, titleIndices, irrelevants)
 
 
     def get_irrelevants(self, q_id: int) -> List[str]:
