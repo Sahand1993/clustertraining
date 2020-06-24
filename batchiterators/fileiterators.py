@@ -172,41 +172,62 @@ class QuoraFileIterator(FileIterator):
         return int(csvLine.split(";")[0])
 
 
-class NaturalQuestionsBM25Iterator():
-    def __init__(self, path: str, no_of_irrelevant_samples = 4, title=True):
+class WikiQABM25Iterator():
+    def __init__(self, totalPath:str, partPath:str, no_of_irrelevant_samples = 4):
         self._no_of_irrelevant_samples = no_of_irrelevant_samples
-        self._title = title
-        self._examples: List[Dict[str, List[str]]] = list(map(self.get_important_fields, open(path)))
-        self._traversal_order = list(range(len(self._examples)))
+        self._all_examples: Dict[str, Dict] = self.getExamples(totalPath)
+        self._allQIds: List[str] = list(self._all_examples.keys())
+        self._partIds: List[str] = self.getIds(partPath)
+        self._traversal_order = list(range(len(self._partIds)))
         self._current_idx = 0
 
+        # TODO: Make sure incorrect samples are sampled from entire file
+        # TODO: Make sure correct samples are only sampled from relevant dataset part
 
-    def get_important_fields(self, jsonl) -> Dict[str, List[str]]:
-        jsonobj = json.loads(jsonl)
-        if self._title:
-            document_tokens: List[str] = jsonobj["documentTitleTokens"]
-        else:
-            document_tokens: List[str] = jsonobj["documentTokens"]
-        question_tokens: List[str] = jsonobj["questionTokens"]
-        example_id = jsonobj["exampleId"]
-        return {"document_tokens": document_tokens, "question_tokens": question_tokens, "id": example_id}
+    def getExamples(self, path: str) -> Dict[str, Dict]:
+        examples: Dict[str, Dict] = {}
+        file = open(path)
+        for line in file:
+            jsonObj = json.loads(line)
+            _id = jsonObj["questionId"] # TODO
+            if _id in examples:
+                raise ValueError("There are duplicate questions in WikiQA")
+            else:
+                examples[_id] = jsonObj
 
-    def __next__(self):
+        return examples
+
+
+    def getIds(self, path:str):
+        _ids = []
+        file = open(path)
+        for line in file:
+            _id = json.loads(line)["questionId"]
+            _ids.append(_id)
+
+        return _ids
+
+
+    def __next__(self) -> Dict:
         try:
-            example = self._examples[self._traversal_order[self._current_idx]]
-            self._current_idx += 1
+            example = self._all_examples[self._partIds[self._current_idx]]
         except IndexError:
             raise StopIteration
 
-        irrelevants: List[List[str]] = list(map(lambda idx: self._examples[idx]["document_tokens"],
-                                                np.random.choice(self._traversal_order, self._no_of_irrelevant_samples,
-                                                                 replace=False)))
-        next = {"id": example["id"],
-               "question_tokens": example["question_tokens"],
-                "relevant_tokens": example["document_tokens"],
-                "irrelevant_tokens": irrelevants}
+        irrelevants = []
+        seenIndices = set()
+        while len(irrelevants) < self._no_of_irrelevant_samples:
+            index = np.random.randint(0, len(self._all_examples))
+            if index != self._current_idx and index not in seenIndices:
+                irrelevants.append(self._all_examples[self._allQIds[index]]["titleTokens"])
+            seenIndices.add(index)
 
-        return next
+        self._current_idx += 1
+
+        return {"id": example["questionId"],
+               "question_tokens": example["questionTokens"],
+                "relevant_tokens": example["titleTokens"],
+                "irrelevant_tokens": irrelevants}
 
 
     def __iter__(self):
@@ -214,10 +235,74 @@ class NaturalQuestionsBM25Iterator():
 
 
     def __len__(self):
-        return len(self._examples)
+        return len(self._partIds)
+
 
     def restart(self):
         self._current_idx = 0
+
+
+class NaturalQuestionsBM25Iterator():
+    def __init__(self, totalPath: str, partPath:str, no_of_irrelevant_samples = 4, title=True):
+        self._no_of_irrelevant_samples = no_of_irrelevant_samples
+        self._title = title
+        self._examples: Dict[int, Dict] = dict(map(self.get_important_fields, open(totalPath)))
+        self._partIds: List[int] = self.getIds(partPath)
+        self._current_idx = 0
+
+
+    def get_important_fields(self, jsonl) -> Tuple[int, Dict]:
+        jsonobj = json.loads(jsonl)
+        if self._title:
+            document_tokens: List[int] = jsonobj["titleTokens"]
+        else:
+            document_tokens: List[int] = jsonobj["documentTokens"]
+        question_tokens: List[str] = jsonobj["questionTokens"]
+        example_id = jsonobj["exampleId"]
+        return example_id, {"document_tokens": document_tokens, "question_tokens": question_tokens, "id": example_id}
+
+
+    def getIds(self, path:str):
+        ids: List[int] = []
+        file = open(path)
+        for line in file:
+            jsonObj = json.loads(line)
+            ids.append(jsonObj["exampleId"])
+
+        return ids
+
+    def __next__(self):
+        try:
+            example = self._examples[self._partIds[self._current_idx]]
+        except IndexError:
+            raise StopIteration
+
+        irrelevants = []
+        seenIndices = set()
+        while len(irrelevants) < self._no_of_irrelevant_samples:
+            index = np.random.randint(0, len(self._partIds))
+            if index != self._current_idx and index not in seenIndices:
+                irrelevants.append(self._examples[self._partIds[index]]["document_tokens"])
+            seenIndices.add(index)
+
+        self._current_idx += 1
+
+        return {"id": example["id"],
+               "question_tokens": example["question_tokens"],
+                "relevant_tokens": example["document_tokens"],
+                "irrelevant_tokens": irrelevants}
+
+
+    def __iter__(self):
+        return self
+
+
+    def __len__(self):
+        return len(self._partIds)
+
+    def restart(self):
+        self._current_idx = 0
+
 
 class NaturalQuestionsFileIterator(FileIterator):
     def __init__(self, csvPath: str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True, shuffle=True, title=False):
@@ -527,13 +612,13 @@ class SquadFileIterator(FileIterator):
             return DataPointFactory.fromWordIndicesData(questionId, questionIndices, titleIndices, irrelevants)
 
     def get_irrelevants(self, rowNumber: str) -> List[str]:
-        questionId = self._questions[rowNumber]["question_id"]
+        titleId = self._questions[rowNumber]["title_id"]
         irrelevants = []
         while len(irrelevants) < 4:
             randomQuestionId = random.choice(self._rowNumbers)
             randomQuestion = self._questions[randomQuestionId]
-            randomQuestionId = randomQuestion["question_id"]
-            if randomQuestionId != questionId:
+            randomTitleId = randomQuestion["title_id"]
+            if randomTitleId != titleId:
                 irrelevants.append(randomQuestion["title_indices"])
 
         return irrelevants
@@ -543,19 +628,20 @@ class SquadFileIterator(FileIterator):
         total.readline()
         for line in total:
             csvValues = line.split(";")
-            rowNo = csvValues[0]
+            _id = csvValues[0]
             questionId = csvValues[1]
+            titleId = csvValues[2]
             if self._encodingType == "NGRAM":
-                question_indices = csvValues[2]
-                title_indices = csvValues[4]
-            elif self._encodingType == "WORD":
                 question_indices = csvValues[3]
                 title_indices = csvValues[5]
+            elif self._encodingType == "WORD":
+                question_indices = csvValues[4]
+                title_indices = csvValues[6]
             else:
                 raise RuntimeError("Wrong value of self._encodingType.")
 
 
-            self._questions[rowNo] = {"question_indices": question_indices, "title_indices": title_indices, "question_id": questionId}
+            self._questions[_id] = {"question_indices": question_indices, "title_indices": title_indices, "question_id": questionId, "title_id": titleId}
             if (questionId in self._articleIdToQuestions):
                 self._articleIdToQuestions[questionId].append({"question_id": questionId,
                                                               "question_indices": question_indices,
@@ -563,8 +649,8 @@ class SquadFileIterator(FileIterator):
 
         for line in self._file:
             csvValues = line.split(";")
-            rowNo = csvValues[0]
-            self._rowNumbers.append(rowNo)
+            _id = csvValues[0]
+            self._rowNumbers.append(_id)
 
 
 class WikiQAFileIterator(FileIterator):

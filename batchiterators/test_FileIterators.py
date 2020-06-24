@@ -133,7 +133,7 @@ class TestFileIterators(TestCase):
     def test_squad_get_samples(self):
         self.loadSquadQuestions()
         iterator = SquadFileIterator("/Users/sahandzarrinkoub/School/year5/thesis/datasets/preprocessed_datasets_nqtitles/squad/data.csv",
-                                     "/Users/sahandzarrinkoub/School/year5/thesis/datasets/preprocessed_datasets_nqtitles/squad/data.csv",
+                                     "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/datasets/squad/data.csv",
                                      batch_size = 1,
                                      no_of_irrelevant_samples=2,
                                      encodingType="NGRAM",
@@ -160,7 +160,7 @@ class TestFileIterators(TestCase):
     def test_wikiqa_get_samples(self):
         self.loadWikiQAQuestions()
         iterator = WikiQAFileIterator("/Users/sahandzarrinkoub/School/year5/thesis/datasets/preprocessed_datasets_nqtitles/wikiqa/data.csv",
-                                      "/Users/sahandzarrinkoub/School/year5/thesis/datasets/preprocessed_datasets_nqtitles/wikiqa/data.csv",
+                                      "/Users/sahandzarrinkoub/School/year5/thesis/datasets/preprocessed_datasets_nqtitles/wikiqa/train.csv",
                                       batch_size=1,
                                       no_of_irrelevant_samples=2,
                                       encodingType="NGRAM",
@@ -168,7 +168,7 @@ class TestFileIterators(TestCase):
                                       shuffle=True)
 
 
-        for i in range(1000):
+        for i in range(2000):
             batch = iterator.__next__()
             _id = batch.get_ids()[0]
 
