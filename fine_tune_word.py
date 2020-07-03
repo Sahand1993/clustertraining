@@ -22,7 +22,7 @@ def get_feed_dict(batch):
     return feed_dict
 
 
-EPOCHS = 30
+EPOCHS = 20
 BATCH_SIZE = 16
 LEARNING_RATE = 0.00011702251629896198
 

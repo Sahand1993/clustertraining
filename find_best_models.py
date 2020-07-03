@@ -3,6 +3,8 @@ import pickle
 import sys
 from typing import List, Tuple
 
+# usage: python find_best_models.py model_homedir
+
 basedir = sys.argv[1]
 
 def find_index_with_maxacc_and_minloss(val_accs, val_losses):
@@ -33,5 +35,4 @@ for _dir in os.listdir(basedir):
     print("model {} has greatest accuracy and smallest loss for that accuracy".format(keep_model_no))
 
     print(os.path.join(basedir, _dir, model_home_dir))
-    #print("keep model no {} which has max val acc {}".format(keep_model_no, max(val_accs)))
     print()

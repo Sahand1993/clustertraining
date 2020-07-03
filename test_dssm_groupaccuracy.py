@@ -1,4 +1,6 @@
 import numpy as np
+import re
+import os
 from typing import Dict
 from tqdm import tqdm
 
@@ -22,10 +24,11 @@ query_vecs: Dict[int, float] = {}  # The vectorized questions as (id, q_vec)
 doc_vecs: Dict[int, float] = {}  # The vectorized documents as (id, doc_vec)
 
 # Load test set
+os.environ["DATASET"] = "datasets/"
 
 dssmTestSetTotal = WikiQAFileIterator(
-    "datasets/wikiqa/data.csv",
-    "datasets/wikiqa/test.csv",
+    os.environ["DATASET"] + "/wikiqa/data.csv",
+    os.environ["DATASET"] + "/wikiqa/test.csv",
     batch_size=1,
     no_of_irrelevant_samples=4,
     encodingType="NGRAM",
@@ -50,23 +53,7 @@ def get_feed_dict(batch):
     return feed_dict
 
 
-# Load model
-modelPaths = [
-    "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_1/model_bs16_lr0.00011702251629896198/tf/dssm-20",
-
-# these worked
-# "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_2/model_bs16_lr0.00011702251629896198/tf/dssm-19",
-# "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_3/model_bs16_lr0.00011702251629896198/tf/dssm-20",
-# "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_4/model_bs16_lr0.00011702251629896198/tf/dssm-20",
-# "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_5/model_bs16_lr0.00011702251629896198/tf/dssm-19",
-
-    "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_6/model_bs16_lr0.00011702251629896198/tf/dssm-19",
-    "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_7/model_bs16_lr0.00011702251629896198/tf/dssm-20",
-    "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_8/model_bs16_lr0.00011702251629896198/tf/dssm-19",
-
-#    "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_9/model_bs16_lr0.00011702251629896198/tf/dssm-20",
-#    "/Users/sahandzarrinkoub/School/year5/thesis/clustertraining/cluster/clustertraining/finetune/finetune_10/model_bs16_lr0.00011702251629896198/tf/dssm-20"
-]
+homePath = "pretrain_rcv1"
 
 saver = tf.compat.v1.train.Saver()
 sess = tf.compat.v1.Session()
@@ -75,8 +62,6 @@ def test_group_acc(modelPath):
     print("\n " + modelPath)
     dssmTestSetTotal.restart()
     saver.restore(sess, modelPath)
-    # init = tf.compat.v1.global_variables_initializer()
-    # sess.run(init)
 
     ll_val_overall = 0
     correct_test = 0
@@ -90,6 +75,14 @@ def test_group_acc(modelPath):
 
     print(correct_test / dssmTestSetTotal.getNoOfDataPoints())
 
-for modelPath in modelPaths:
+pattern = re.compile("dssm-([0-9]+).*")
+
+for _dir in os.listdir(homePath):
+    if _dir == ".DS_Store":
+        continue
+    tfDir = os.path.join(homePath, _dir, "model_bs16_lr0.00011702251629896198", "tf")
+    dssmModelFiles = list(filter(lambda fileName: fileName!="checkpoint", os.listdir(tfDir)))
+    modelNo = pattern.match(dssmModelFiles[0]).group(1)
+    modelPath = os.path.join(homePath, _dir, "model_bs16_lr0.00011702251629896198", "tf", "dssm-{}".format(modelNo))
     test_group_acc(modelPath)
     dssmTestSetTotal.restart()
