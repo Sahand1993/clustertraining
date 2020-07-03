@@ -123,7 +123,6 @@ class DataPointBatch():
         return self.create_batch(list(map(lambda data_point: data_point.get_query_ngrams(), self.data_points)))
 
 
-
     def get_q_dense(self) -> np.ndarray:
         #return self.create_batch_dense(list(map(lambda data_point: data_point.get_query_ngrams(), self.data_points)))
         return np.vstack([q for q in map(lambda data_point: data_point.get_query_ngrams(), self.data_points)])

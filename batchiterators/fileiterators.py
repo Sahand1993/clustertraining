@@ -111,14 +111,13 @@ class QuoraFileIterator(FileIterator):
 
     def get_irrelevants(self, q_id: int) -> List[str]:
         irrelevant_ngrams: List[str] = []
-        while True:
+        while len(irrelevant_ngrams) < self._no_of_irrelevant_samples:
             new_q_id: int = random.choice(self._questionIds)
             new_q_duplicates: List[str] = self._questionIdToDuplicates[new_q_id]
             if q_id not in new_q_duplicates:
                 irrelevant_ngrams.append(self._questionIdToIndices[new_q_id])
 
-            if (len(irrelevant_ngrams) == self._no_of_irrelevant_samples):
-                return irrelevant_ngrams
+        return irrelevant_ngrams
 
 
     def index_file(self):
@@ -505,7 +504,7 @@ class ReutersFileIterator(FileIterator):
 
     def get_irrelevants(self, _id):
         irrelevants: List[str] = []
-        while True:
+        while len(irrelevants) < self._no_of_irrelevant_samples:
             irrelevantId: int = random.choice(self._traversal_order)
             if irrelevantId == _id:
                 continue
@@ -514,8 +513,8 @@ class ReutersFileIterator(FileIterator):
                     irrelevants.append(self._idToArticle[irrelevantId]["queryArticleNGramIndices"])
                 else:
                     irrelevants.append(self._idToArticle[irrelevantId]["queryArticleWordIndices"])
-            if len(irrelevants) == self._no_of_irrelevant_samples:
-                return irrelevants
+
+        return irrelevants
 
 
     def isRelevant(self, id1: int, id2: int) -> bool:
