@@ -1,9 +1,6 @@
 import numpy as np
 from scipy.special import rel_entr
 from tqdm import tqdm
-#from simplegoodturing import simpleGoodTuringProbs
-from simple_good_turing import Estimator
-
 from dssm.config import NO_OF_TRIGRAMS
 
 from batchiterators.fileiterators import WikiQAFileIterator, ReutersFileIterator, SquadFileIterator, QuoraFileIterator, \
@@ -63,18 +60,6 @@ def freq_of_freqs(freqs):
     return N
 
 
-def create_good_turing_probs(freqs):
-    N = freq_of_freqs(freqs)
-    #N = create_ngram_dict()  # Should be a dict like {ngram_idx_1: freq_1, ngram_idx_2: freq_2, ...} #sgt.sgt.ChinesePluralsTest.input
-
-    good_turing_probs = Estimator(N=N).Z
-    output = []
-    for i, freq in enumerate(freqs):
-        estimated_probability = good_turing_probs[i+1]
-        output.append(estimated_probability)
-    return np.array(output)
-
-
 def get_probs(iterator: FileIterator):
     freqs = np.zeros(NO_OF_TRIGRAMS, np.float64)
     for batch in tqdm(iterator):
@@ -82,7 +67,6 @@ def get_probs(iterator: FileIterator):
         d = batch.get_relevant_dense()[0]
         freqs += q
         freqs += d
-    #freqs = create_good_turing_probs(freqs)
     freqs += 1
     return normalize(freqs)
 
