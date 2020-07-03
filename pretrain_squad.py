@@ -1,7 +1,5 @@
 from batchiterators.fileiterators import *
 
-
-
 from dssm.model_dense_ngram import *
 import os
 from helpers.helpers import correct_guesses_of_dssm
@@ -14,18 +12,18 @@ def get_feed_dict(batch):
     n1_batch, n2_batch, n3_batch, n4_batch = batch.get_irrelevant_dense()
 
     feed_dict = {
-    x_q: q_batch,
-    x_p: p_batch,
-    x_n1: n1_batch,
-    x_n2: n2_batch,
-    x_n3: n3_batch,
-    x_n4: n4_batch
+        x_q: q_batch,
+        x_p: p_batch,
+        x_n1: n1_batch,
+        x_n2: n2_batch,
+        x_n3: n3_batch,
+        x_n4: n4_batch
     }
 
     return feed_dict
 
 
-EPOCHS = 30
+EPOCHS = 20
 BATCH_SIZE = 16
 LEARNING_RATE = 0.00011702251629896198
 
@@ -81,8 +79,8 @@ for i in range(10):
         DENSE = True
 
         trainingSet = SquadFileIterator(
-            "datasets_squad/squad/data.csv",
-            "datasets_squad/squad/train.csv",
+            "datasets/squad/data.csv",
+            "datasets/squad/train.csv",
             batch_size=BATCH_SIZE,
             no_of_irrelevant_samples=4,
             encodingType="NGRAM",
@@ -90,8 +88,8 @@ for i in range(10):
         )
 
         validationSet = SquadFileIterator(
-            "datasets_squad/squad/data.csv",
-            "datasets_squad/squad/val.csv",
+            "datasets/squad/data.csv",
+            "datasets/squad/val.csv",
             batch_size=BATCH_SIZE,
             no_of_irrelevant_samples=4,
             encodingType="NGRAM",

@@ -3,10 +3,11 @@ from rank_bm25 import BM25Okapi
 from sklearn.metrics import ndcg_score
 from tqdm import tqdm
 
-from batchiterators.fileiterators import NaturalQuestionsBM25Iterator
+from batchiterators.fileiterators import WikiQABM25Iterator
 
-bm25TestSetTotal = NaturalQuestionsBM25Iterator(
-    "datasets_squad_new/nq/test.jsonl",
+bm25TestSetTotal = WikiQABM25Iterator(
+    "datasets/wikiqa/test.jsonl",
+    "datasets/wikiqa/test.jsonl",
     no_of_irrelevant_samples=4)
 
 corpus = []
@@ -17,8 +18,9 @@ for example in bm25TestSetTotal:
 
 bm25 = BM25Okapi(corpus)
 
-bm25TestSetTotal = NaturalQuestionsBM25Iterator(
-    "datasets_squad_new/nq/test.jsonl",
+bm25TestSetTotal = WikiQABM25Iterator(
+    "datasets/wikiqa/test.jsonl",
+    "datasets/wikiqa/test.jsonl",
     no_of_irrelevant_samples=4)
 
 ndcg_scores_1 = []

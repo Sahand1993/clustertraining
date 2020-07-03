@@ -26,7 +26,7 @@ EPOCHS = 20
 BATCH_SIZE = 16
 LEARNING_RATE = 0.00011702251629896198
 
-for i in [1,6]:
+for i in [2,3,4,5,7,8,9,10]:
     print()
     modelPath = "finetune/finetune_{}/model_bs".format(i) + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
 
@@ -101,7 +101,8 @@ for i in [1,6]:
             # evaluate on validation set
             ll_val_overall = 0
             correct_val = 0
-            for batch in validationSet:
+            print("Calculating initial val acc")
+            for batch in tqdm(validationSet):
                 feed_dict = get_feed_dict(batch)
                 (ll_val,) = sess.run([logloss], feed_dict=feed_dict)
                 batch_correct = correct_guesses_of_dssm(sess, feed_dict, prob_p, prob_n1, prob_n2, prob_n3, prob_n4)
@@ -128,7 +129,7 @@ for i in [1,6]:
             # evaluate on validation set
             ll_val_overall = 0
             correct_val = 0
-            for batch in validationSet:
+            for batch in tqdm(validationSet):
                 feed_dict = get_feed_dict(batch)
                 (ll_val,) = sess.run([logloss], feed_dict=feed_dict)
                 batch_correct = correct_guesses_of_dssm(sess, feed_dict, prob_p, prob_n1, prob_n2, prob_n3, prob_n4)

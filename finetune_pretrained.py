@@ -1,3 +1,5 @@
+import re
+
 from batchiterators.fileiterators import *
 from dssm.model_dense_ngram import *
 import os
@@ -11,12 +13,12 @@ def get_feed_dict(batch):
     n1_batch, n2_batch, n3_batch, n4_batch = batch.get_irrelevant_dense()
 
     feed_dict = {
-    x_q: q_batch,
-    x_p: p_batch,
-    x_n1: n1_batch,
-    x_n2: n2_batch,
-    x_n3: n3_batch,
-    x_n4: n4_batch
+        x_q: q_batch,
+        x_p: p_batch,
+        x_n1: n1_batch,
+        x_n2: n2_batch,
+        x_n3: n3_batch,
+        x_n4: n4_batch
     }
 
     return feed_dict
@@ -26,21 +28,36 @@ EPOCHS = 20
 BATCH_SIZE = 16
 LEARNING_RATE = 0.00011702251629896198
 
-for i in range(10):
+pretrainedDir = "pretrain_squad"
+pattern = re.compile("dssm-([0-9]+).*")
+dirs = filter(lambda _dir: _dir != ".DS_Store", os.listdir(pretrainedDir))
+for i, _dir in enumerate(dirs):
+    print()
+    print(_dir)
+    modelPath = "finetune_pretrained_squad/finetune_pretrained_squad_{}/model_bs".format(_dir) + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
 
-    os.mkdir("finetune/finetune_smallnq_ngram_{}".format(i + 1))
-    modelPath = "finetune/finetune_smallnq_ngram_{}/model_bs".format(i + 1) + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE)
-    os.mkdir(modelPath)
-    os.mkdir(modelPath + "/pickles")
-    os.mkdir(modelPath + "/tf")
+    try:
+        os.mkdir("finetune_pretrained_squad")
+    except:
+        pass
+    try:
+        os.mkdir("finetune_pretrained_squad/finetune_pretrained_squad_{}".format(_dir))
+        os.mkdir(modelPath)
+        os.mkdir(modelPath + "/pickles")
+        os.mkdir(modelPath + "/tf")
+    except FileExistsError:
+        pass
 
     optimizer = tf.compat.v1.train.AdamOptimizer(LEARNING_RATE).minimize(logloss)
-    saver = tf.compat.v1.train.Saver(max_to_keep=100)
+    saver = tf.compat.v1.train.Saver(max_to_keep=20)
 
     with tf.compat.v1.Session() as sess:
         try:
             # https://www.easy-tensorflow.com/tf-tutorials/basics/save-and-restore
-            path = tf.compat.v1.train.latest_checkpoint(modelPath + "/tf")
+            modelFiles = os.listdir(os.path.join(pretrainedDir, _dir, "model_bs".format(_dir) + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE), "tf"))
+            fileName = list(filter(lambda name: name != "checkpoint" and name != ".DS_Store", modelFiles))[0]
+            pretrainedModelNo = pattern.match(fileName).group(1)
+            path = os.path.join(pretrainedDir, _dir, "model_bs".format(_dir) + str(BATCH_SIZE) + "_lr" + str(LEARNING_RATE), "tf", "dssm-" + pretrainedModelNo)
             saver.restore(sess, path)
             print("restored model")
         except Exception as err:
@@ -51,21 +68,23 @@ for i in range(10):
 
         DENSE = True
 
-
-        trainingSet = NaturalQuestionsFileIterator(
-            "datasets_smallnq/nq/train.csv",
+        trainingSet = WikiQAFileIterator(
+            "datasets/wikiqa/data.csv",
+            "datasets/wikiqa/train.csv",
             batch_size=BATCH_SIZE,
             no_of_irrelevant_samples=4,
             encodingType="NGRAM",
-            dense=DENSE)
+            dense=DENSE,
+            shuffle=True)
 
-        validationSet = NaturalQuestionsFileIterator(
-            "datasets_smallnq/nq/val.csv",
+        validationSet = WikiQAFileIterator(
+            "datasets/wikiqa/data.csv",
+            "datasets/wikiqa/val.csv",
             batch_size=BATCH_SIZE,
             no_of_irrelevant_samples=4,
             encodingType="NGRAM",
-            dense=DENSE
-        )
+            dense=DENSE,
+            shuffle=True)
 
         try:
             iterations_done = pickle.load(open(modelPath + "/pickles/i.pic", "rb"))
@@ -88,6 +107,18 @@ for i in range(10):
             val_losses = []
             print("Couldn't find pickles: {}".format(e))
             print("Starting fresh")
+            # evaluate on validation set
+            ll_val_overall = 0
+            correct_val = 0
+            print("Calculating initial val acc")
+            for batch in tqdm(validationSet):
+                feed_dict = get_feed_dict(batch)
+                (ll_val,) = sess.run([logloss], feed_dict=feed_dict)
+                batch_correct = correct_guesses_of_dssm(sess, feed_dict, prob_p, prob_n1, prob_n2, prob_n3, prob_n4)
+                correct_val += batch_correct
+                ll_val_overall += ll_val
+            validationSet.restart()
+            print("initial val acc: {}".format(correct_val / validationSet.getNoOfDataPoints()))
 
         for epoch in range(iterations_done + 1, EPOCHS + 1):
             print("Epoch {}".format(epoch))
@@ -107,7 +138,7 @@ for i in range(10):
             # evaluate on validation set
             ll_val_overall = 0
             correct_val = 0
-            for batch in validationSet:
+            for batch in tqdm(validationSet):
                 feed_dict = get_feed_dict(batch)
                 (ll_val,) = sess.run([logloss], feed_dict=feed_dict)
                 batch_correct = correct_guesses_of_dssm(sess, feed_dict, prob_p, prob_n1, prob_n2, prob_n3, prob_n4)
