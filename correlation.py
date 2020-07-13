@@ -1,7 +1,7 @@
 # Calculate correlation within pretraining data set (treat as one)
 
-from batchiterators.batchiterators import RandomBatchIterator
-from batchiterators.fileiterators import *
+from datasetiterators.batchiterators import RandomBatchIterator
+from datasetiterators.fileiterators import *
 import random
 from scipy.stats import pearsonr
 

@@ -1,5 +1,5 @@
-from batchiterators.batchiterators import RandomBatchIterator
-from batchiterators.fileiterators import *
+from datasetiterators.batchiterators import RandomBatchIterator
+from datasetiterators.fileiterators import *
 
 
 

@@ -4,7 +4,7 @@ import random
 import json
 import numpy as np
 
-from batchiterators.batchiterators import DataPoint, DataPointFactory, readCsvLines, sample_numbers, CSV_SEPARATOR, DataPointBatch
+from datasetiterators.batchiterators import DataPoint, DataPointFactory, readCsvLines, sample_numbers, CSV_SEPARATOR, DataPointBatch
 
 
 class FileIterator(ABC):
@@ -304,15 +304,15 @@ class NaturalQuestionsBM25Iterator():
 
 
 class NaturalQuestionsFileIterator(FileIterator):
-    def __init__(self, csvPath: str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True, shuffle=True, title=False):
+    def __init__(self, filePath: str, batch_size = 5, no_of_irrelevant_samples = 4, encodingType="NGRAM", dense=True, shuffle=True, title=False):
         """
 
-        :param csvPath:
+        :param filePath:
         :param batch_size:
         :param no_of_irrelevant_samples:
         :param encodingType: Can be NGRAM or WORD. Determines which document representation will be used.
         """
-        super().__init__(batch_size, no_of_irrelevant_samples, encodingType, csvPath, dense)
+        super().__init__(batch_size, no_of_irrelevant_samples, encodingType, filePath, dense)
         self._title = title
         self._csvValues: List[List[str]] = readCsvLines(self._file)
         self._traversal_order = list(range(len(self._csvValues)))
@@ -691,9 +691,9 @@ class WikiQAFileIterator(FileIterator):
 
         return samples
 
-    def get_data_point(self, id):
+    def get_data_point(self, id) -> DataPoint:
         question = self._idToQuestion[id]
-        _id: int = question["id"]
+        _id: str = question["id"]
         questionId = question["question_id"]
         questionIndices = question["question_indices"]
         titleIndices = question["title_indices"]
@@ -731,9 +731,47 @@ class WikiQAFileIterator(FileIterator):
                 self._idToQuestion[_id] = {"id": _id, "question_id": questionId, "document_id": docId,
                                            "question_indices": questionWordIndices, "title_indices": titleWordIndices}
 
-            # TODO: Take out csv values
         for line in self._file:
             csvValues = line.split(";")
             _id, questionId, docId, questionNGramIndices, questionWordIndices, titleNGramIndices, titleWordIndices = csvValues
             self._datasetPartIds.append(_id)
 
+
+class ConfluenceFileIterator(FileIterator):
+    def __init__(self, filePath, batch_size = 1, dense=True):
+        super().__init__(batch_size,
+                         0,
+                         "NGRAM",
+                         filePath,
+                         dense)
+        self._filePath = filePath
+        self._idToExample: Dict[str, Dict[str, str]] = {}
+        self._traversal_order: List[str] = []
+        self._index_file()
+
+
+    def _index_file(self) -> None:
+        for line in self._file:
+            _id, ngrams  = line.split(";")
+            self._idToExample[_id] = {"document_indices": ngrams}
+            self._traversal_order.append(_id)
+
+
+    def get_samples(self, ids: List[int]) -> List[DataPoint]:
+        samples: List[DataPoint] = []
+        for _id in ids:
+            data_point = self._get_datapoint(_id)
+            samples.append(data_point)
+        return samples
+
+
+    def _get_datapoint(self, _id) -> DataPoint:
+        return DataPointFactory.fromNGramsData(_id, None, _id, None, self._idToExample[_id]["document_indices"], [])
+
+
+    def get_irrelevants(self, q_id: int):
+        pass
+
+
+    def restart(self):
+        self._current_idx = 0

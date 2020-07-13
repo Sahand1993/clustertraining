@@ -4,8 +4,8 @@ from unittest import TestCase
 
 import numpy as np
 
-from batchiterators.fileiterators import SquadFileIterator, WikiQAFileIterator, NaturalQuestionsFileIterator, \
-    ReutersFileIterator, QuoraFileIterator
+from datasetiterators.fileiterators import SquadFileIterator, WikiQAFileIterator, NaturalQuestionsFileIterator, \
+    ReutersFileIterator, QuoraFileIterator, ConfluenceFileIterator
 
 
 def relevant(article1, article2):
@@ -36,6 +36,8 @@ class TestFileIterators(TestCase):
 
     quoraIdToPair: Dict[int, Dict] = {}
     quoraQuestionIdToDuplicates: Dict[int, int] = {}
+
+    confluenceIdToDoc: Dict[str, List[str]] = {}
 
 
     def containsAllNGrams(self, tokens: List[str], nGramIdToFreq: Dict[int, int]) -> bool:
@@ -121,9 +123,16 @@ class TestFileIterators(TestCase):
                     self.quoraQuestionIdToDuplicates[obj["question2Id"]] = [obj["question1Id"]]
 
 
+    def loadConfluenceDocs(self):
+        confluenceFile = open("/Users/sahandzarrinkoub/School/year5/thesis/datasets/preprocessed_datasets_nqtitles/confluence/mid.json")
+        for line in confluenceFile:
+            obj = json.loads(line)
+            self.confluenceIdToDoc[obj["id"]] = obj["titleTokens"]
+
+
     def get_nonzeroindex_to_value(self, dense_vector) -> Dict[int, int]:
-        qNGramIndices, = np.nonzero(dense_vector)
-        return {nGramIndex: dense_vector[nGramIndex] for nGramIndex in qNGramIndices}
+        nGramIndices, = np.nonzero(dense_vector)
+        return {nGramIndex: dense_vector[nGramIndex] for nGramIndex in nGramIndices}
 
 
     def setUp(self):
@@ -305,3 +314,22 @@ class TestFileIterators(TestCase):
             question2Id = self.quoraIdToPair[_id]["question2Id"]
             self.assertTrue(question1Id in self.quoraQuestionIdToDuplicates[question2Id])
 
+
+    def test_confluence_get_samples(self):
+        self.loadConfluenceDocs()
+        iterator = ConfluenceFileIterator(
+            "/Users/sahandzarrinkoub/School/year5/thesis/datasets/preprocessed_datasets_nqtitles/confluence/data.csv",
+            dense=True
+        )
+
+        for i in range(5000):
+            try:
+                batch = iterator.__next__()
+            except StopIteration:
+                break
+            _id = batch.get_ids()[0]
+
+            docNGrams = batch.get_relevant_dense()[0]
+            docNGrams = self.get_nonzeroindex_to_value(docNGrams)
+            docTokens = self.confluenceIdToDoc[_id]
+            self.assertTrue(self.containsAllNGrams(docTokens, docNGrams))

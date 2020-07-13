@@ -4,7 +4,7 @@ import os
 from typing import Dict
 from tqdm import tqdm
 
-from batchiterators.fileiterators import WikiQAFileIterator, SquadFileIterator
+from datasetiterators.fileiterators import WikiQAFileIterator, SquadFileIterator
 from helpers.helpers import correct_guesses_of_dssm
 
 LEARNING_RATE = 0.00011702251629896198

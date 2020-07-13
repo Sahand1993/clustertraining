@@ -3,7 +3,7 @@ from scipy.special import rel_entr
 from tqdm import tqdm
 from dssm.config import NO_OF_TRIGRAMS
 
-from batchiterators.fileiterators import WikiQAFileIterator, ReutersFileIterator, SquadFileIterator, QuoraFileIterator, \
+from datasetiterators.fileiterators import WikiQAFileIterator, ReutersFileIterator, SquadFileIterator, QuoraFileIterator, \
     FileIterator
 
 wikiqa_iter = WikiQAFileIterator(

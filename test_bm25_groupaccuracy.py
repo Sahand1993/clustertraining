@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 # Load test set
 
-from batchiterators.fileiterators import NaturalQuestionsBM25Iterator
+from datasetiterators.fileiterators import NaturalQuestionsBM25Iterator
 
 for i in range(10):
     testSet = NaturalQuestionsBM25Iterator(

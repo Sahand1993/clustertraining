@@ -16,7 +16,6 @@ CSV_SEPARATOR = ";"
 
 def to_dense(indices: List[str]) -> List[int]:
     array = np.zeros((1, NO_OF_INDICES))
-    #print(indices)
     for freq_index in indices:
         freq, index = freq_index.split(" ")
         array[0][int(index)] = int(freq)
@@ -48,18 +47,23 @@ def sample_numbers(end: int, size: int, exclude: int) -> List[int]:
 
 class DataPoint():
 
-    def __init__(self, _id: str, qId: str, docId: str, query_ngrams: np.ndarray, relevant_ngrams: np.ndarray, irrelevant_ngrams: np.ndarray):
+    def __init__(self, _id: str, qId: str, docId: str, query_indices: str, relevant_indices: str, irrelevant_indices: np.ndarray):
         """
-        :param query_ngrams: vector of integers
-        :param relevant_ngrams: as above
-        :param irrelevant_ngrams: matrix of integers, shape is [no_of_irrelevants, None]
+        :param query_indices: vector of integers
+        :param relevant_indices: as above
+        :param irrelevant_indices: matrix of integers, shape is [no_of_irrelevants, None]
         """
         self._id = _id
         self._qId = qId
         self._docId = docId
-        self._query_ngrams: np.ndarray = query_ngrams
-        self._relevant_ngrams: np.ndarray = relevant_ngrams
-        self._irrelevant_ngrams: np.ndarray = irrelevant_ngrams
+
+        if query_indices:
+            self._query_indices: np.ndarray = np.array(to_dense(query_indices.split(",")))
+        else:
+            self._query_indices = None
+
+        self._relevant_ngrams: np.ndarray = np.array(to_dense(relevant_indices.split(",")))
+        self._irrelevant_ngrams: np.ndarray = irrelevant_indices
 
 
     def get_id(self):
@@ -75,7 +79,7 @@ class DataPoint():
 
 
     def get_query_ngrams(self) -> np.ndarray:
-        return self._query_ngrams
+        return self._query_indices
 
 
     def get_relevant_ngrams(self) -> np.ndarray:
@@ -94,8 +98,8 @@ class DataPointFactory():
             _id,
             qId,
             docId,
-            np.array(to_dense(query_ngrams.split(","))),
-            np.array(to_dense(relevant_ngrams.split(","))),
+            query_ngrams,
+            relevant_ngrams,
             np.array([to_dense(ngrams.split(",")) for ngrams in irrelevant_ngrams])
         )
 
@@ -106,8 +110,8 @@ class DataPointFactory():
             _id,
             qId,
             docId,
-            np.array(to_dense(queryWordIndices.split(","))),
-            np.array(to_dense(relevantWordIndices.split(","))),
+            queryWordIndices,
+            relevantWordIndices,
             np.array([to_dense(ngrams.split(",")) for ngrams in irrelevantWordIndices])
         )
 
@@ -137,7 +141,7 @@ class DataPointBatch():
         return np.vstack([rel for rel in map(lambda data_point: data_point.get_relevant_ngrams(), self.data_points)])
 
 
-    def get_irrelevant_indices(self) -> List[np.ndarray]: # TODO
+    def get_irrelevant_indices(self) -> List[np.ndarray]:
         irrelevants_batches = [] # [irr1_batch, irr2_batch, irr3_batch]
         for i in range(self._no_of_irrelevant_samples):
             irrelevants_batches.append(self.create_batch(list(map(lambda data_point: data_point.get_irrelevant_ngrams()[i], self.data_points))))
@@ -145,7 +149,7 @@ class DataPointBatch():
         return irrelevants_batches
 
 
-    def get_irrelevant_dense(self) -> List[np.ndarray]: # TODO
+    def get_irrelevant_dense(self) -> List[np.ndarray]:
         irrelevants_batches = []
         for i in range(self._no_of_irrelevant_samples):
             #batch = self.create_batch_dense(
@@ -199,7 +203,7 @@ class RandomBatchIterator():
 
         :param args: iterators to uniformly sample from.
         """
-        self.iterators = list(args) # TODO: Create traversal order.
+        self.iterators = list(args)
         self._turns = []
         for iterator in self.iterators:
             self._turns += list((iterator for _ in range(len(iterator))))

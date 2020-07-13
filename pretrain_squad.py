@@ -1,4 +1,4 @@
-from batchiterators.fileiterators import *
+from datasetiterators.fileiterators import *
 
 from dssm.model_dense_ngram import *
 import os

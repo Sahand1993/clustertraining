@@ -4,7 +4,7 @@ import numpy as np
 from scipy.linalg import norm
 from sklearn.metrics import ndcg_score
 import os
-from batchiterators.fileiterators import FileIterator, SquadFileIterator, WikiQAFileIterator
+from datasetiterators.fileiterators import FileIterator, SquadFileIterator, WikiQAFileIterator
 from dssm.model_dense_ngram import *
 
 from helpers.helpers import get_model_path

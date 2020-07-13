@@ -1,4 +1,4 @@
-from batchiterators.fileiterators import SquadFileIterator
+from datasetiterators.fileiterators import SquadFileIterator
 from dssm.model_dense_ngram import *
 import os
 from helpers.helpers import correct_guesses_of_dssm

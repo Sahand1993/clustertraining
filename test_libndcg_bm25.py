@@ -3,7 +3,7 @@ from rank_bm25 import BM25Okapi
 from sklearn.metrics import ndcg_score
 from tqdm import tqdm
 
-from batchiterators.fileiterators import WikiQABM25Iterator
+from datasetiterators.fileiterators import WikiQABM25Iterator
 
 bm25TestSetTotal = WikiQABM25Iterator(
     "datasets/wikiqa/test.jsonl",
